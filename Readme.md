@@ -1,4 +1,4 @@
-# Dinosaur Bot
+# Dinosaur Game Bot
 
 Reinforcement learning applied to Google chrome's dinosaur game.
 
