@@ -23,9 +23,9 @@ TBA
 
 ### MDP
 
-- State space:
-- Action space:
-- Reward: 
+- State space: 11 X 11 grid world
+- Action space: { up: 0, down: 1, left: 2, right: 3 }
+- Reward: { coin: 1, star: 50, ghost: -50 }
 
 *MDP image*
 

@@ -1,2 +1,4 @@
 notebook/tutorials
 .idea
+__pycache__
+.ipynb_checkpoints
