@@ -3,16 +3,118 @@ import numpy as np
 from gym import spaces
 
 
-class GridEnv(gym.Env):
+class SmallGridEnv(gym.Env):
+    def __init__(self):
+        self.world_shape = [5, 5]
+        self.init_agent_pos = [4, 0]
+        self.agent_pos = self.init_agent_pos[:]
+        self.ghost_pos = [[1, 1], [0, 4]]
+
+        self.wall_pos = [[3, 0], [3, 1], [3, 3], [1, 2], [2, 3]]
+        self.star_pos = [0, 2]
+
+        self.observation_space = spaces.Discrete(5 * 5)
+        self.action_space = spaces.Discrete(4)
+
+    def step(self, action):
+        self.agent_pos = self.step_agent(action)
+
+        info = {}
+        results = (self._get_obs(), self._get_reward(), self._is_done(), info)
+
+        self.world[np.where(self.world == -1)] = 0
+        self.world[self.agent_pos[0], self.agent_pos[1]] = -1
+
+        return results
+
+    def step_agent(self, action):
+        agent_pos = self.agent_pos
+        pos = agent_pos[:]
+
+        if action == 0:  # up
+            agent_pos[0] -= 1
+        elif action == 1:  # down
+            agent_pos[0] += 1
+        elif action == 2:  # left
+            agent_pos[1] -= 1
+        elif action == 3:  # right
+            agent_pos[1] += 1
+        else:
+            raise Exception("the action is not defined")
+
+        # out of the map
+        if agent_pos[0] < 0 or agent_pos[0] > 4:
+            agent_pos = pos
+        if agent_pos[1] < 0 or agent_pos[1] > 4:
+            agent_pos = pos
+        # wall
+        if agent_pos in self.wall_pos:
+            agent_pos = pos
+
+        return agent_pos
+
+    def reset(self):
+        self.world = np.zeros(self.world_shape)
+        self.world[self.init_agent_pos[0], self.init_agent_pos[1]] = -1
+        self.world[self.star_pos[0], self.star_pos[1]] = 1  # star
+        for v in self.ghost_pos:  # ghost
+            self.world[v[0], v[1]] = 2
+        for v in self.wall_pos:  # wall
+            self.world[v[0], v[1]] = 3
+        self.agent_pos = self.init_agent_pos[:]
+        return self._get_obs()
+
+    def render(self):
+        render_str = ""
+        for i in range(self.world_shape[0]):
+            for j in range(self.world_shape[1]):
+                if self.world[i, j] == 1:
+                    item = "* "
+                elif self.world[i, j] == 2:
+                    item = "G "
+                elif self.world[i, j] == 3:
+                    item = "# "
+                elif self.world[i, j] == -1:
+                    if self.agent_pos in self.ghost_pos:
+                        item = "X "
+                    else:
+                        item = "C "
+                else:
+                    item = "0 "
+                render_str += "{}".format(item)
+            render_str += "\n"
+
+        print(render_str)
+
+    def close(self):
+        pass
+
+    def _get_obs(self):
+        return self.agent_pos
+
+    def _get_reward(self):
+        pos = self.agent_pos
+        if self.world[pos[0], pos[1]] == 2:
+            return -100
+        else:
+            return -1
+
+    def _is_done(self):
+        if self.agent_pos in self.ghost_pos:  # meet ghost
+            return True
+        if not np.any(self.world == 1):  # no star
+            return True
+        else:
+            return False
+
+
+class BigGridEnv(gym.Env):
     def __init__(self):
         self.world_shape = [11, 11]
         self.init_agent_pos = [10, 5]
         self.init_ghost_pos = [[1, 5], [6, 5]]
         self.agent_pos = self.init_agent_pos[:]
         self.ghost_pos = self.init_ghost_pos[:]
-
-        self.action_space = spaces.Discrete(4)
-        self.obs_space = spaces.Discrete(11*11)
 
         self.wall_pos = [[0, 5], [1, 1], [1, 2], [1, 3], [1, 7],
                          [1, 8], [1, 9], [2, 5], [3, 1], [3, 3],
@@ -26,6 +128,9 @@ class GridEnv(gym.Env):
                            [6, 4], [6, 5], [6, 6], [6, 7], [6, 8]]
         self.star_pos = [[0, 0], [0, 10]]
         self.coin_pos = self.set_coin_pos()
+
+        # self.observation_space = spaces.Discrete(11 * 11 - len(self.wall_pos))
+        self.action_space = spaces.Discrete(4)
 
     def set_coin_pos(self):
         coin_pos = [[i, j] for i in range(11) for j in range(11)]
@@ -81,13 +186,13 @@ class GridEnv(gym.Env):
         if pos in self.ghost_pos:
             pass
         else:
-            if action == 0:     # up
+            if action == 0:  # up
                 agent_pos[0] -= 1
-            elif action == 1:   # down
+            elif action == 1:  # down
                 agent_pos[0] += 1
-            elif action == 2:   # left
+            elif action == 2:  # left
                 agent_pos[1] -= 1
-            elif action == 3:   # right
+            elif action == 3:  # right
                 agent_pos[1] += 1
             else:
                 raise Exception("the action is not defined")
@@ -105,14 +210,14 @@ class GridEnv(gym.Env):
 
     def reset(self):
         self.world = np.zeros(self.world_shape)
-        self.world[self.init_agent_pos] = -1
-        for v in self.coin_pos:     # coin
+        self.world[self.init_agent_pos[0], self.init_agent_pos[1]] = -1
+        for v in self.coin_pos:  # coin
             self.world[v[0], v[1]] = 1
-        for v in self.star_pos:     # star
+        for v in self.star_pos:  # star
             self.world[v[0], v[1]] = 2
-        for v in self.init_ghost_pos:   # ghost
+        for v in self.init_ghost_pos:  # ghost
             self.world[v[0], v[1]] = 3
-        for v in self.wall_pos:     # wall
+        for v in self.wall_pos:  # wall
             self.world[v[0], v[1]] = 4
         self.agent_pos = self.init_agent_pos[:]
         self.ghost_pos = self.init_ghost_pos[:]
@@ -151,18 +256,18 @@ class GridEnv(gym.Env):
     def _get_reward(self):
         pos = self.agent_pos
         if self.world[pos[0], pos[1]] == 1:
-            return 1    # coin point
+            return 1  # coin point
         elif self.world[pos[0], pos[1]] == 2:
-            return 50   # star point
+            return 50  # star point
         elif self.world[pos[0], pos[1]] == 3:
-            return -50  # meet ghost
+            return -100  # meet ghost
         else:
-            return 0
+            return -1
 
     def _is_done(self):
-        if self.agent_pos in self.ghost_pos:    # meet ghost
+        if self.agent_pos in self.ghost_pos:  # meet ghost
             return True
-        if not np.any(self.world == 2):      # no star
+        if not np.any(self.world == 2):  # no star
             return True
         else:
             return False
