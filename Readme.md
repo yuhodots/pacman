@@ -1,8 +1,6 @@
 # Pac-man Bot
 
-Solving the simple Pac-man game with reinforcement learning.
-
-This repository is for a very simple reinforcement learning task. So it's not exactly the same game as Pac-man. In this environment, the episode ends when the agent eats all the stars  (unlike the original Pac-man game that the episode ends when all coins are removed).
+This repository contains the implementation of a simple reinforcement learning task. So it's not exactly the same as the original Pac-man game. In this environment, the episode ends when the agent gets all the stars (unlike the original Pac-man game that the episode ends when all coins are removed).
 
 <img src = "./img/video-game.png" width="60%">
 
@@ -37,7 +35,7 @@ I used this environment for experiments in situation of knowing the transition p
 
 I used this environment for experiments in situations where don't know the transition probabilities, such as MC method.
 
-- Observation space: (11 x 11 grid world) X (Coin state) X (Star state) X (Ghost position state)
+- Observation space: (11 x 11 grid world) x (Coin state) x (Star state) x (Ghost position state)
 - Action space: { up: 0, down: 1, left: 2, right: 3 }
 - Reward: { coin: 1, star: 50, ghost: -100, others: -1 }
 
