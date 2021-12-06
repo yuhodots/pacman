@@ -2,6 +2,8 @@
 
 Solving the simple Pac-man game with reinforcement learning.
 
+This repository is for a very simple reinforcement learning task. So it's not exactly the same game as Pac-man. In this environment, the episode ends when the agent eats all the stars  (unlike the original Pac-man game that the episode ends when all coins are removed).
+
 <img src = "./img/video-game.png" width="60%">
 
 *<Taken from: https://pixabay.com/images/id-1332694/>*
