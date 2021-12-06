@@ -1,5 +1,6 @@
 import argparse
-from env import GridEnv
+from env import BigGridEnv, SmallGridEnv
+
 
 def str2bool(v):
     if isinstance(v, bool):
@@ -16,11 +17,12 @@ def get_arguments():
     parser = argparse.ArgumentParser()
     return parser
 
+
 def main():
     parser = get_arguments()
     args = parser.parse_args()
 
-    env = GridEnv()
+    env = BigGridEnv()
 
     for i_episode in range(50):
         env.reset()
@@ -33,7 +35,6 @@ def main():
             obs, reward, done, info = env.step(action)
             print("obs: {}, reward:{}, done:{}".format(obs, reward, done))
             env.render()
-
             env.step_ghost()
 
             if done:

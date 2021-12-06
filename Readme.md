@@ -1,8 +1,10 @@
 # Pac-man Bot
 
-Solving the Pac-man game with reinforcement learning.
+Solving the simple Pac-man game with reinforcement learning.
 
-<img src="./img/Env.png" alt="img" style="zoom:48%;" />
+<img src = "./img/video-game.png" width="60%">
+
+*<Taken from: https://pixabay.com/images/id-1332694/>*
 
 
 ## Contents
@@ -17,17 +19,27 @@ Solving the Pac-man game with reinforcement learning.
 
 ## Overview
 
-> TBA
+### Environments
 
-TBA
+#### SmallGridEnv
 
-### MDP
+I used this environment for experiments in situation of knowing the transition probabilities, such as value iteration.
 
-- State space: 11 X 11 grid world
+- Observation space: 5 x 5 grid world
 - Action space: { up: 0, down: 1, left: 2, right: 3 }
-- Reward: { coin: 1, star: 50, ghost: -50 }
+- Reward: { ghost: -100, others: -1 }
 
-*MDP image*
+![img](./img/SGE.png)
+
+#### BigGridEnv
+
+I used this environment for experiments in situations where don't know the transition probabilities, such as MC method.
+
+- Observation space: (11 x 11 grid world) X (Coin state) X (Star state) X (Ghost position state)
+- Action space: { up: 0, down: 1, left: 2, right: 3 }
+- Reward: { coin: 1, star: 50, ghost: -100, others: -1 }
+
+![img](./img/BGE.png)
 
 ## How To Run
 
