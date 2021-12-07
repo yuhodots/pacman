@@ -23,9 +23,11 @@ This repository contains the implementation of a simple reinforcement learning t
 
 #### SmallGridEnv
 
-I used this environment for experiments in situation of knowing the transition probabilities, such as value iteration.
+In this environment, the ghost does not move. And since there is only one star, the episode ends when the agent arrives at the star. The figure below is a visualization of the environment through `visualize_matrix()`. Visualization is also possible through the `env.render()` function.
 
-- Observation space: 5 x 5 grid world
+- Observation space: 5 x 5 grid world - wall positon 
+  - `observation_space.n`  = (25 - 5) = *20*
+
 - Action space: { up: 0, down: 1, left: 2, right: 3 }
 - Reward: { ghost: -100, others: -1 }
 
@@ -33,11 +35,13 @@ I used this environment for experiments in situation of knowing the transition p
 
 #### BigGridEnv
 
-I used this environment for experiments in situations where don't know the transition probabilities, such as MC method.
+In this environment, the ghost randomly moves left and right. And since there are multiple stars, the episode ends when all the stars are obtained. The visualization method is the same as SmallGridEnv.
 
-- Observation space: (11 x 11 grid world) x (Coin state) x (Star state) x (Ghost position state)
+- Observation space: (11 x 11 grid world - wall positon) x (Star state) x (Ghost position state)
+  - `observation_space.n` = (121 - 40) * (2^4) * (3 * 7) = *27216*
+
 - Action space: { up: 0, down: 1, left: 2, right: 3 }
-- Reward: { coin: 1, star: 50, ghost: -100, others: -1 }
+- Reward: { star: 50, ghost: -100, others: -1 }
 
 ![img](./img/BGE.png)
 

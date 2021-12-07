@@ -13,7 +13,8 @@ class SmallGridEnv(gym.Env):
         self.wall_pos = [[3, 0], [3, 1], [3, 3], [1, 2], [2, 3]]
         self.star_pos = [0, 2]
 
-        self.observation_space = spaces.Discrete(5 * 5)
+        n = 5 * 5 - len(self.wall_pos)
+        self.observation_space = spaces.Discrete(n)
         self.action_space = spaces.Discrete(4)
 
     def step(self, action):
@@ -126,22 +127,11 @@ class BigGridEnv(gym.Env):
                          [9, 2], [9, 4], [9, 6], [9, 8], [9, 9]]
         self.ghost_road = [[1, 4], [1, 5], [1, 6], [6, 2], [6, 3],
                            [6, 4], [6, 5], [6, 6], [6, 7], [6, 8]]
-        self.star_pos = [[0, 0], [0, 10]]
-        self.coin_pos = self.set_coin_pos()
+        self.star_pos = [[0, 0], [2, 10], [4, 4], [10, 2]]
 
-        # self.observation_space = spaces.Discrete(11 * 11 - len(self.wall_pos))
+        n = (11 * 11 - len(self.wall_pos)) * (2 ** len(self.star_pos)) * (3 * 7)
+        self.observation_space = spaces.Discrete(n)
         self.action_space = spaces.Discrete(4)
-
-    def set_coin_pos(self):
-        coin_pos = [[i, j] for i in range(11) for j in range(11)]
-        for item in self.wall_pos:
-            coin_pos.remove(item)
-        for item in self.ghost_road:
-            coin_pos.remove(item)
-        for item in self.star_pos:
-            coin_pos.remove(item)
-        coin_pos.remove(self.init_agent_pos)
-        return coin_pos
 
     def step(self, action):
         self.agent_pos = self.step_agent(action)
@@ -172,7 +162,7 @@ class BigGridEnv(gym.Env):
 
             # update world table
             for v in ghost_prime:
-                self.world[v[0], v[1]] = 3
+                self.world[v[0], v[1]] = 2
             for v in ghost_pos:
                 self.world[v[0], v[1]] = 0
 
@@ -211,14 +201,12 @@ class BigGridEnv(gym.Env):
     def reset(self):
         self.world = np.zeros(self.world_shape)
         self.world[self.init_agent_pos[0], self.init_agent_pos[1]] = -1
-        for v in self.coin_pos:  # coin
-            self.world[v[0], v[1]] = 1
         for v in self.star_pos:  # star
-            self.world[v[0], v[1]] = 2
+            self.world[v[0], v[1]] = 1
         for v in self.init_ghost_pos:  # ghost
-            self.world[v[0], v[1]] = 3
+            self.world[v[0], v[1]] = 2
         for v in self.wall_pos:  # wall
-            self.world[v[0], v[1]] = 4
+            self.world[v[0], v[1]] = 3
         self.agent_pos = self.init_agent_pos[:]
         self.ghost_pos = self.init_ghost_pos[:]
         return self._get_obs()
@@ -228,12 +216,10 @@ class BigGridEnv(gym.Env):
         for i in range(self.world_shape[0]):
             for j in range(self.world_shape[1]):
                 if self.world[i, j] == 1:
-                    item = "$ "
-                elif self.world[i, j] == 2:
                     item = "* "
-                elif self.world[i, j] == 3:
+                elif self.world[i, j] == 2:
                     item = "G "
-                elif self.world[i, j] == 4:
+                elif self.world[i, j] == 3:
                     item = "# "
                 elif self.world[i, j] == -1:
                     if self.agent_pos in self.ghost_pos:
@@ -256,10 +242,8 @@ class BigGridEnv(gym.Env):
     def _get_reward(self):
         pos = self.agent_pos
         if self.world[pos[0], pos[1]] == 1:
-            return 1  # coin point
-        elif self.world[pos[0], pos[1]] == 2:
             return 50  # star point
-        elif self.world[pos[0], pos[1]] == 3:
+        elif self.world[pos[0], pos[1]] == 2:
             return -100  # meet ghost
         else:
             return -1
@@ -267,7 +251,7 @@ class BigGridEnv(gym.Env):
     def _is_done(self):
         if self.agent_pos in self.ghost_pos:  # meet ghost
             return True
-        if not np.any(self.world == 2):  # no star
+        if not np.any(self.world == 1):  # no star
             return True
         else:
             return False

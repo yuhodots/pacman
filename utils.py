@@ -26,16 +26,9 @@ def visualize_matrix(M, strs='',
             c = strs[idx]
             idx = idx + 1
             ax.text(x_val + 0.5, y_val + 0.5, c, va='center', ha='center', size=fontsize)
-    if world == 'Big':
-        cax = plt.colorbar(im, cax=divider.append_axes('right', size='5%', pad=0.05), orientation='vertical')
-        cax.set_ticks([-1, 0, 1, 2, 3, 4])
-        cax.set_ticklabels(['Agent', 'Empty', 'Coin', 'Star', 'Ghost', 'Wall'])
-    elif world == 'Small':
-        cax = plt.colorbar(im, cax=divider.append_axes('right', size='5%', pad=0.05), orientation='vertical')
-        cax.set_ticks([-1, 0, 1, 2, 3])
-        cax.set_ticklabels(['Agent', 'Empty', 'Star', 'Ghost', 'Wall'])
-    else:
-        raise Exception("the env is not defined")
+    cax = plt.colorbar(im, cax=divider.append_axes('right', size='5%', pad=0.05), orientation='vertical')
+    cax.set_ticks([-1, 0, 1, 2, 3])
+    cax.set_ticklabels(['Agent', 'Empty', 'Star', 'Ghost', 'Wall'])
     fig.suptitle(title, size=title_fs)
     fig.tight_layout()
     fig.subplots_adjust(top=0.9)
