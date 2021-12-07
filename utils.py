@@ -4,7 +4,6 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 
 def visualize_matrix(M, strs='',
-                     world='Big',
                      fontsize=15,
                      cmap='turbo',
                      title='Title',
