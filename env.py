@@ -7,11 +7,12 @@ class SmallGridEnv(gym.Env):
     def __init__(self):
         self.world_shape = [5, 5]
         self.init_agent_pos = [4, 0]
+        self.init_star_pos = [0, 2]
         self.agent_pos = self.init_agent_pos[:]
         self.ghost_pos = [[1, 1], [0, 4]]
 
         self.wall_pos = [[3, 0], [3, 1], [3, 3], [1, 2], [2, 3]]
-        self.star_pos = [0, 2]
+        self.star_pos = self.init_star_pos[:]
 
         n = 5 * 5 - len(self.wall_pos)
         self.observation_space = spaces.Discrete(n)
@@ -57,12 +58,13 @@ class SmallGridEnv(gym.Env):
     def reset(self):
         self.world = np.zeros(self.world_shape)
         self.world[self.init_agent_pos[0], self.init_agent_pos[1]] = -1
-        self.world[self.star_pos[0], self.star_pos[1]] = 1  # star
+        self.world[self.init_star_pos[0], self.init_star_pos[1]] = 1
         for v in self.ghost_pos:  # ghost
             self.world[v[0], v[1]] = 2
         for v in self.wall_pos:  # wall
             self.world[v[0], v[1]] = 3
         self.agent_pos = self.init_agent_pos[:]
+        self.star_pos = self.init_star_pos[:]
         return self._get_obs()
 
     def render(self):
@@ -91,12 +93,19 @@ class SmallGridEnv(gym.Env):
         pass
 
     def _get_obs(self):
-        return self.agent_pos
+        obs_agent = self.agent_pos[0] * self.world_shape[1] + self.agent_pos[1]
+        obs_wall = len([item for item in self.wall_pos if (item[0] < self.agent_pos[0]) or
+                        ((item[0] == self.agent_pos[0]) and (item[1] < self.agent_pos[1]))])
+        obs = obs_agent - obs_wall
+        return obs
 
     def _get_reward(self):
         pos = self.agent_pos
-        if self.world[pos[0], pos[1]] == 2:
-            return -100
+        if self.world[pos[0], pos[1]] == 1:
+            self.star_pos.remove(pos)
+            return 50  # star point
+        elif self.world[pos[0], pos[1]] == 2:
+            return -100  # meet ghost
         else:
             return -1
 
@@ -114,8 +123,10 @@ class BigGridEnv(gym.Env):
         self.world_shape = [11, 11]
         self.init_agent_pos = [10, 5]
         self.init_ghost_pos = [[1, 5], [6, 5]]
+        self.init_star_pos = [[0, 0], [2, 10], [4, 4], [10, 2]]
         self.agent_pos = self.init_agent_pos[:]
         self.ghost_pos = self.init_ghost_pos[:]
+        self.star_pos = self.init_star_pos[:]
 
         self.wall_pos = [[0, 5], [1, 1], [1, 2], [1, 3], [1, 7],
                          [1, 8], [1, 9], [2, 5], [3, 1], [3, 3],
@@ -125,7 +136,8 @@ class BigGridEnv(gym.Env):
                          [6, 9], [7, 3], [7, 4], [7, 6], [7, 7],
                          [8, 1], [8, 4], [8, 6], [8, 9], [9, 1],
                          [9, 2], [9, 4], [9, 6], [9, 8], [9, 9]]
-        self.star_pos = [[0, 0], [2, 10], [4, 4], [10, 2]]
+        self.ghost_a_road = [[1, 4], [1, 5], [1, 6]]
+        self.ghost_b_road = [[6, 2], [6, 3], [6, 4], [6, 5], [6, 6], [6, 7], [6, 8]]
 
         n = (11 * 11 - len(self.wall_pos)) * (2 ** len(self.star_pos)) * (3 * 7)
         self.observation_space = spaces.Discrete(n)
@@ -199,7 +211,7 @@ class BigGridEnv(gym.Env):
     def reset(self):
         self.world = np.zeros(self.world_shape)
         self.world[self.init_agent_pos[0], self.init_agent_pos[1]] = -1
-        for v in self.star_pos:  # star
+        for v in self.init_star_pos:  # star
             self.world[v[0], v[1]] = 1
         for v in self.init_ghost_pos:  # ghost
             self.world[v[0], v[1]] = 2
@@ -207,6 +219,7 @@ class BigGridEnv(gym.Env):
             self.world[v[0], v[1]] = 3
         self.agent_pos = self.init_agent_pos[:]
         self.ghost_pos = self.init_ghost_pos[:]
+        self.star_pos = self.init_star_pos[:]
         return self._get_obs()
 
     def render(self):
@@ -235,11 +248,37 @@ class BigGridEnv(gym.Env):
         pass
 
     def _get_obs(self):
-        return self.agent_pos
+        obs_agent = self.agent_pos[0] * self.world_shape[1] + self.agent_pos[1]
+        obs_wall = len([item for item in self.wall_pos if (item[0] < self.agent_pos[0]) or
+                      ((item[0] == self.agent_pos[0]) and (item[1] < self.agent_pos[1]))])
+        obs_star = self._get_obs_star()
+        obs_ghost = self._get_obs_star()
+
+        n_grid = self.world_shape[0] * self.world_shape[1]
+        n_wall = len(self.wall_pos)
+        n_obs_star = 2 ** len(self.init_star_pos)
+        n_obs_ghost = len(self.ghost_a_road) * len(self.ghost_b_road)
+
+        obs = np.ravel_multi_index((obs_agent - obs_wall, obs_star, obs_ghost),
+                                   (n_grid - n_wall, n_obs_star, n_obs_ghost))
+        return obs
+
+    def _get_obs_star(self):
+        tuple_obs = tuple([int(item in self.star_pos) for item in self.init_star_pos])
+        tuple_obs_all = tuple([2 for _ in range(len(self.init_star_pos))])
+        obs_star = np.ravel_multi_index(tuple_obs, tuple_obs_all)
+        return obs_star
+
+    def _get_obs_ghost(self):
+        ghost_a_idx = self.ghost_a_road.index(self.ghost_pos[0]) + 1
+        ghost_b_idx = self.ghost_b_road.index(self.ghost_pos[1]) + 1
+        obs_ghost = ghost_a_idx * ghost_b_idx - 1
+        return obs_ghost
 
     def _get_reward(self):
         pos = self.agent_pos
         if self.world[pos[0], pos[1]] == 1:
+            self.star_pos.remove(pos)
             return 50  # star point
         elif self.world[pos[0], pos[1]] == 2:
             return -100  # meet ghost
@@ -260,8 +299,10 @@ class UnistEnv(gym.Env):
         self.world_shape = [11, 11]
         self.init_agent_pos = [10, 5]
         self.init_ghost_pos = [[0, 3], [5, 8]]
+        self.init_star_pos = [[1, 8], [3, 2], [3, 5], [7, 2], [7, 7]]
         self.agent_pos = self.init_agent_pos[:]
         self.ghost_pos = self.init_ghost_pos[:]
+        self.star_pos = self.init_star_pos[:]
 
         self.wall_pos = [[0, 7], [0, 8], [0, 9], [1, 1], [1, 3],
                          [1, 5], [1, 7], [2, 1], [2, 3], [2, 5],
@@ -272,7 +313,8 @@ class UnistEnv(gym.Env):
                          [6, 9], [7, 1], [7, 3], [7, 5], [7, 8],
                          [8, 1], [8, 3], [8, 5], [8, 8], [9, 1],
                          [9, 3], [9, 5], [9, 8]]
-        self.star_pos = [[1, 8], [3, 2], [3, 5], [7, 2], [7, 7]]
+        self.ghost_a_road = [[0, 0], [0, 1], [0, 2], [0, 3], [0, 4], [0, 5], [0, 6]]
+        self.ghost_b_road = [[5, 6], [5, 7], [5, 8], [5, 9], [5, 10]]
 
         n = (11 * 11 - len(self.wall_pos)) * (2 ** len(self.star_pos)) * (5 * 5)
         self.observation_space = spaces.Discrete(n)
@@ -346,7 +388,7 @@ class UnistEnv(gym.Env):
     def reset(self):
         self.world = np.zeros(self.world_shape)
         self.world[self.init_agent_pos[0], self.init_agent_pos[1]] = -1
-        for v in self.star_pos:  # star
+        for v in self.init_star_pos:  # star
             self.world[v[0], v[1]] = 1
         for v in self.init_ghost_pos:  # ghost
             self.world[v[0], v[1]] = 2
@@ -354,6 +396,7 @@ class UnistEnv(gym.Env):
             self.world[v[0], v[1]] = 3
         self.agent_pos = self.init_agent_pos[:]
         self.ghost_pos = self.init_ghost_pos[:]
+        self.star_pos = self.init_star_pos[:]
         return self._get_obs()
 
     def render(self):
@@ -382,11 +425,37 @@ class UnistEnv(gym.Env):
         pass
 
     def _get_obs(self):
-        return self.agent_pos
+        obs_agent = self.agent_pos[0] * self.world_shape[1] + self.agent_pos[1]
+        obs_wall = len([item for item in self.wall_pos if (item[0] < self.agent_pos[0]) or
+                        ((item[0] == self.agent_pos[0]) and (item[1] < self.agent_pos[1]))])
+        obs_star = self._get_obs_star()
+        obs_ghost = self._get_obs_star()
+
+        n_grid = self.world_shape[0] * self.world_shape[1]
+        n_wall = len(self.wall_pos)
+        n_obs_star = 2 ** len(self.init_star_pos)
+        n_obs_ghost = len(self.ghost_a_road) * len(self.ghost_b_road)
+
+        obs = np.ravel_multi_index((obs_agent - obs_wall, obs_star, obs_ghost),
+                                   (n_grid - n_wall, n_obs_star, n_obs_ghost))
+        return obs
+
+    def _get_obs_star(self):
+        tuple_obs = tuple([int(item in self.star_pos) for item in self.init_star_pos])
+        tuple_obs_all = tuple([2 for _ in range(len(self.init_star_pos))])
+        obs_star = np.ravel_multi_index(tuple_obs, tuple_obs_all)
+        return obs_star
+
+    def _get_obs_ghost(self):
+        ghost_a_idx = self.ghost_a_road.index(self.ghost_pos[0]) + 1
+        ghost_b_idx = self.ghost_b_road.index(self.ghost_pos[1]) + 1
+        obs_ghost = ghost_a_idx * ghost_b_idx - 1
+        return obs_ghost
 
     def _get_reward(self):
         pos = self.agent_pos
         if self.world[pos[0], pos[1]] == 1:
+            self.star_pos.remove(pos)
             return 50  # star point
         elif self.world[pos[0], pos[1]] == 2:
             return -100  # meet ghost
