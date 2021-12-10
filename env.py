@@ -10,7 +10,6 @@ class SmallGridEnv(gym.Env):
         self.init_star_pos = [0, 2]
         self.agent_pos = self.init_agent_pos[:]
         self.ghost_pos = [[1, 1], [0, 4]]
-
         self.wall_pos = [[3, 0], [3, 1], [3, 3], [1, 2], [2, 3]]
         self.star_pos = self.init_star_pos[:]
 
@@ -127,7 +126,6 @@ class BigGridEnv(gym.Env):
         self.agent_pos = self.init_agent_pos[:]
         self.ghost_pos = self.init_ghost_pos[:]
         self.star_pos = self.init_star_pos[:]
-
         self.wall_pos = [[0, 5], [1, 1], [1, 2], [1, 3], [1, 7],
                          [1, 8], [1, 9], [2, 5], [3, 1], [3, 3],
                          [3, 5], [3, 7], [3, 9], [4, 1], [4, 3],
@@ -139,7 +137,7 @@ class BigGridEnv(gym.Env):
         self.ghost_a_road = [[1, 4], [1, 5], [1, 6]]
         self.ghost_b_road = [[6, 2], [6, 3], [6, 4], [6, 5], [6, 6], [6, 7], [6, 8]]
 
-        n = (11 * 11 - len(self.wall_pos)) * (2 ** len(self.star_pos)) * (3 * 7)
+        n = (11 * 11 - len(self.wall_pos)) * (2 ** len(self.star_pos)) * len(self.ghost_a_road) * len(self.ghost_b_road)
         self.observation_space = spaces.Discrete(n)
         self.action_space = spaces.Discrete(4)
 
@@ -270,9 +268,10 @@ class BigGridEnv(gym.Env):
         return obs_star
 
     def _get_obs_ghost(self):
-        ghost_a_idx = self.ghost_a_road.index(self.ghost_pos[0]) + 1
-        ghost_b_idx = self.ghost_b_road.index(self.ghost_pos[1]) + 1
-        obs_ghost = ghost_a_idx * ghost_b_idx - 1
+        ghost_a_idx = self.ghost_a_road.index(self.ghost_pos[0])
+        ghost_b_idx = self.ghost_b_road.index(self.ghost_pos[1])
+        obs_ghost = np.ravel_multi_index((ghost_a_idx, ghost_b_idx),
+                                         (len(self.ghost_a_road), len(self.ghost_b_road)))
         return obs_ghost
 
     def _get_reward(self):
@@ -303,7 +302,6 @@ class UnistEnv(gym.Env):
         self.agent_pos = self.init_agent_pos[:]
         self.ghost_pos = self.init_ghost_pos[:]
         self.star_pos = self.init_star_pos[:]
-
         self.wall_pos = [[0, 7], [0, 8], [0, 9], [1, 1], [1, 3],
                          [1, 5], [1, 7], [2, 1], [2, 3], [2, 5],
                          [2, 7], [2, 8], [2, 9], [3, 1], [3, 3],
@@ -316,7 +314,7 @@ class UnistEnv(gym.Env):
         self.ghost_a_road = [[0, 0], [0, 1], [0, 2], [0, 3], [0, 4], [0, 5], [0, 6]]
         self.ghost_b_road = [[5, 6], [5, 7], [5, 8], [5, 9], [5, 10]]
 
-        n = (11 * 11 - len(self.wall_pos)) * (2 ** len(self.star_pos)) * (5 * 5)
+        n = (11 * 11 - len(self.wall_pos)) * (2 ** len(self.star_pos)) * len(self.ghost_a_road) * len(self.ghost_b_road)
         self.observation_space = spaces.Discrete(n)
         self.action_space = spaces.Discrete(4)
 
@@ -447,9 +445,10 @@ class UnistEnv(gym.Env):
         return obs_star
 
     def _get_obs_ghost(self):
-        ghost_a_idx = self.ghost_a_road.index(self.ghost_pos[0]) + 1
-        ghost_b_idx = self.ghost_b_road.index(self.ghost_pos[1]) + 1
-        obs_ghost = ghost_a_idx * ghost_b_idx - 1
+        ghost_a_idx = self.ghost_a_road.index(self.ghost_pos[0])
+        ghost_b_idx = self.ghost_b_road.index(self.ghost_pos[1])
+        obs_ghost = np.ravel_multi_index((ghost_a_idx, ghost_b_idx),
+                                         (len(self.ghost_a_road), len(self.ghost_b_road)))
         return obs_ghost
 
     def _get_reward(self):
