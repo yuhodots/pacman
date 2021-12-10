@@ -7,7 +7,7 @@ class SmallGridEnv(gym.Env):
     def __init__(self):
         self.world_shape = [5, 5]
         self.init_agent_pos = [4, 0]
-        self.init_star_pos = [0, 2]
+        self.init_star_pos = [[0, 2]]
         self.agent_pos = self.init_agent_pos[:]
         self.ghost_pos = [[1, 1], [0, 4]]
         self.wall_pos = [[3, 0], [3, 1], [3, 3], [1, 2], [2, 3]]
@@ -57,7 +57,8 @@ class SmallGridEnv(gym.Env):
     def reset(self):
         self.world = np.zeros(self.world_shape)
         self.world[self.init_agent_pos[0], self.init_agent_pos[1]] = -1
-        self.world[self.init_star_pos[0], self.init_star_pos[1]] = 1
+        for v in self.init_star_pos:  # star
+            self.world[v[0], v[1]] = 1
         for v in self.ghost_pos:  # ghost
             self.world[v[0], v[1]] = 2
         for v in self.wall_pos:  # wall
@@ -90,6 +91,13 @@ class SmallGridEnv(gym.Env):
 
     def close(self):
         pass
+
+    def get_selected_obs(self, agent_pos):
+        obs_agent = agent_pos[0] * self.world_shape[1] + agent_pos[1]
+        obs_wall = len([item for item in self.wall_pos if (item[0] < agent_pos[0]) or
+                        ((item[0] == agent_pos[0]) and (item[1] < agent_pos[1]))])
+        obs = obs_agent - obs_wall
+        return obs
 
     def _get_obs(self):
         obs_agent = self.agent_pos[0] * self.world_shape[1] + self.agent_pos[1]
