@@ -29,7 +29,7 @@ In this environment, the ghost does not move. And since there is only one star, 
   - `observation_space.n`  = (25 - 5) = *20*
 
 - Action space: { up: 0, down: 1, left: 2, right: 3 }
-- Reward: { ghost: -100, others: -1 }
+- Reward: { ghost: -10, others: -1 }
 
 ![img](./img/SGE.png)
 
@@ -41,7 +41,7 @@ In this environment, the ghost randomly moves left and right. And since there ar
   - `observation_space.n` = (121 - 40) * (2^4) * (3 * 7) = *27216*
 
 - Action space: { up: 0, down: 1, left: 2, right: 3 }
-- Reward: { star: 50, ghost: -100, others: -1 }
+- Reward: { star: 50, ghost: -10, others: -1 }
 
 ![img](./img/BGE.png)
 

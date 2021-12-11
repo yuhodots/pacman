@@ -1,9 +1,10 @@
 import argparse
 import numpy as np
+from tqdm import tqdm
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from envs import SmallGridEnv, BigGridEnv, UnistEnv
-from agents import MCAgent
+from agents import MCAgent, SARSAAgent
 
 
 def str2bool(v):
@@ -33,16 +34,58 @@ def get_agent(args, n_state, n_action):
     agent_name = args.agent
     if agent_name == "MCAgent":
         return MCAgent(n_state, n_action, epsilon=args.epsilon, alpha=args.alpha, gamma=args.gamma, seed=args.seed)
+    elif agent_name == "SARSAAgent":
+        return SARSAAgent(n_state, n_action, epsilon=args.epsilon, alpha=args.alpha, gamma=args.gamma, seed=args.seed)
     else:
         raise Exception("There is no agent '{}'".format(agent_name))
 
 
+def run_algorithm(args, env, agent):
+    agent_name = args.agent
+    episode = tqdm(range(args.n_episode), desc="episode")
+
+    if agent_name == "MCAgent":
+        for e_idx in episode:
+            state = env.reset()
+            action = agent.get_action(state)
+            done = False
+            while not done:
+                next_state, reward, done, info = env.step(action)   # step
+                next_action = agent.get_action(next_state)          # Get next action
+                agent.save_sample(state, action, reward, done)      # Store samples
+                state = next_state
+                action = next_action
+            # End of the episode
+            agent.update_q()    # Update Q value using sampled episode
+            agent.update_epsilon(100 / (e_idx + 1))     # Decaying epsilon
+    elif agent_name == "SARSAAgent":
+        for e_idx in episode:
+            state = env.reset()
+            action = agent.get_action(state)
+            done = False
+            while not done:
+                next_state, reward, done, info = env.step(action)   # step
+                action_prime = agent.get_action(next_state)         # Get next action
+                agent.update_q(state, action, reward, next_state, action_prime, done)  # online learning
+                state = next_state
+                action = action_prime
+            agent.update_epsilon(100 / (e_idx + 1))     # Decaying epsilon
+    else:
+        raise Exception("There is no agent '{}'".format(agent_name))
+
+    return env, agent
+
+
+def test_algorithm(args, env, agent):
+
+    return env, agent
+
+
 def visualize_matrix(M,
-                     strs='',
-                     fontsize=15,
-                     cmap='turbo',
+                     cmap='Pastel1',
                      title='Title',
                      title_fs=15,
+                     save_path='',
                      REMOVE_TICK_LABELS=True):
     n_row, n_col = M.shape[0], M.shape[1]
     fig, ax = plt.subplots()
@@ -53,13 +96,6 @@ def visualize_matrix(M,
     ax.set_yticks(np.arange(0, n_row, 1))
     ax.grid(color='w', linewidth=2)
     ax.set_frame_on(False)
-    x, y = np.meshgrid(np.arange(0, n_col, 1.0), np.arange(0, n_row, 1.0))
-    if len(strs) == n_row * n_col:
-        idx = 0
-        for x_val, y_val in zip(x.flatten(), y.flatten()):
-            c = strs[idx]
-            idx = idx + 1
-            ax.text(x_val + 0.5, y_val + 0.5, c, va='center', ha='center', size=fontsize)
     cax = plt.colorbar(im, cax=divider.append_axes('right', size='5%', pad=0.05), orientation='vertical')
     cax.set_ticks([-1, 0, 1, 2, 3])
     cax.set_ticklabels(['Agent', 'Empty', 'Star', 'Ghost', 'Wall'])
@@ -70,6 +106,8 @@ def visualize_matrix(M,
         plt.setp(ax.get_xticklabels(), visible=False)
         plt.setp(ax.get_yticklabels(), visible=False)
     plt.show()
+    if save_path != '':
+        plt.savefig(save_path)
 
 
 def plot_pi_v(Pi,
@@ -117,10 +155,11 @@ def plot_pi_v(Pi,
 
 def display_q_value(Q,
                     env,
-                    title="",
+                    title='',
                     fig_size=8,
-                    text_fs=9,
-                    title_fs=15):
+                    text_fs=8,
+                    title_fs=15,
+                    save_path=''):
     n_state, n_action = Q.shape
 
     # Triangle patches for each action
@@ -169,3 +208,5 @@ def display_q_value(Q,
     plt.yticks(range(env.world_shape[1]))
     plt.gca().invert_yaxis()
     plt.show()
+    if save_path != '':
+        plt.savefig(save_path)

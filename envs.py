@@ -13,9 +13,10 @@ class SmallGridEnv(gym.Env):
         self.wall_pos = [[3, 0], [3, 1], [3, 3], [1, 2], [2, 3]]
         self.star_pos = self.init_star_pos[:]
 
-        n = 5 * 5 - len(self.wall_pos)
+        n = self.world_shape[0] * self.world_shape[1] - len(self.wall_pos)
         self.observation_space = spaces.Discrete(n)
         self.action_space = spaces.Discrete(4)
+        self.reset()
 
     def step(self, action):
         self.agent_pos = self.step_agent(action)
@@ -110,9 +111,9 @@ class SmallGridEnv(gym.Env):
         pos = self.agent_pos
         if self.world[pos[0], pos[1]] == 1:
             self.star_pos.remove(pos)
-            return 50  # star point
+            return -1
         elif self.world[pos[0], pos[1]] == 2:
-            return -100  # meet ghost
+            return -10  # meet ghost
         else:
             return -1
 
@@ -145,9 +146,11 @@ class BigGridEnv(gym.Env):
         self.ghost_a_road = [[1, 4], [1, 5], [1, 6]]
         self.ghost_b_road = [[6, 2], [6, 3], [6, 4], [6, 5], [6, 6], [6, 7], [6, 8]]
 
-        n = (11 * 11 - len(self.wall_pos)) * (2 ** len(self.star_pos)) * len(self.ghost_a_road) * len(self.ghost_b_road)
+        n = (self.world_shape[0] * self.world_shape[1] - len(self.wall_pos)) \
+            * (2 ** len(self.star_pos)) * len(self.ghost_a_road) * len(self.ghost_b_road)
         self.observation_space = spaces.Discrete(n)
         self.action_space = spaces.Discrete(4)
+        self.reset()
 
     def step(self, action):
         self.agent_pos = self.step_agent(action)
@@ -288,7 +291,7 @@ class BigGridEnv(gym.Env):
             self.star_pos.remove(pos)
             return 50  # star point
         elif self.world[pos[0], pos[1]] == 2:
-            return -100  # meet ghost
+            return -10  # meet ghost
         else:
             return -1
 
@@ -322,9 +325,11 @@ class UnistEnv(gym.Env):
         self.ghost_a_road = [[0, 0], [0, 1], [0, 2], [0, 3], [0, 4], [0, 5], [0, 6]]
         self.ghost_b_road = [[5, 6], [5, 7], [5, 8], [5, 9], [5, 10]]
 
-        n = (11 * 11 - len(self.wall_pos)) * (2 ** len(self.star_pos)) * len(self.ghost_a_road) * len(self.ghost_b_road)
+        n = (self.world_shape[0] * self.world_shape[1] - len(self.wall_pos)) \
+            * (2 ** len(self.star_pos)) * len(self.ghost_a_road) * len(self.ghost_b_road)
         self.observation_space = spaces.Discrete(n)
         self.action_space = spaces.Discrete(4)
+        self.reset()
 
     def step(self, action):
         self.agent_pos = self.step_agent(action)
@@ -465,7 +470,7 @@ class UnistEnv(gym.Env):
             self.star_pos.remove(pos)
             return 50  # star point
         elif self.world[pos[0], pos[1]] == 2:
-            return -100  # meet ghost
+            return -10  # meet ghost
         else:
             return -1
 

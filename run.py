@@ -1,6 +1,6 @@
 import argparse
-from tqdm import tqdm
 from utils import get_env, get_agent, visualize_matrix, display_q_value
+from utils import run_algorithm, test_algorithm
 
 
 def get_arguments():
@@ -12,7 +12,7 @@ def get_arguments():
 
     # Agent
     parser.add_argument('-agent', type=str, default='MCAgent',
-                        choices=['MCAgent'])
+                        choices=['MCAgent', 'SARSAAgent'])
     parser.add_argument('-epsilon', type=float, default=1.0)
     parser.add_argument('-alpha', type=float, default=0.1)
     parser.add_argument('-gamma', type=float, default=0.995)
@@ -21,6 +21,7 @@ def get_arguments():
     parser.add_argument('-n_episode', type=int, default=10000)
     parser.add_argument('-n_tick', type=int, default=1000)
     parser.add_argument('-seed', type=int, default=42)
+    parser.add_argument('-save_dir', type=str, default='./results/')
 
     return parser
 
@@ -31,25 +32,11 @@ def main():
 
     env = get_env(args)
     agent = get_agent(args, n_state=env.observation_space.n, n_action=env.action_space.n)
+    visualize_matrix(env.world, title=args.env, save_path=args.save_dir + args.env + '.png')
 
-    for e_idx in tqdm(range(args.n_episode), desc="episode"):
-        state = env.reset()     # reset environment, select initial
-        action = agent.get_action(state)
-        done = False
-        while not done:
-            next_state, reward, done, info = env.step(action)   # step
-            next_action = agent.get_action(next_state)          # Get next action
-            agent.save_sample(state, action, reward, done)      # Store samples
-            state = next_state
-            action = next_action
-        # End of the episode
-        agent.update_q()    # Update Q value using sampled episode
-        agent.update_epsilon(100 / (e_idx + 1))     # Decaying epsilon
-
-    env.reset()
-    visualize_matrix(env.world, strs='', cmap='Pastel1', title='SmallGridEnv')
-    display_q_value(agent.Q, env, title="Monte Carlo Policy Iteration",
-                    fig_size=8, text_fs=8, title_fs=15)
+    env, agent = run_algorithm(args, env, agent)
+    display_q_value(agent.Q, env, title=args.agent, save_path=args.save_dir + args.env + '_' + args.agent + '.png')
+    # test_algorithm(args, env, agent)
 
 
 if __name__ == "__main__":
