@@ -12,7 +12,7 @@ def get_arguments():
 
     # Agent
     parser.add_argument('-agent', type=str, default='MCAgent',
-                        choices=['MCAgent', 'SARSAAgent', 'QlearningAgent'])
+                        choices=['MCAgent', 'SARSAAgent', 'QlearningAgent', 'DoubleQlearningAgent'])
     parser.add_argument('-epsilon', type=float, default=1.0)
     parser.add_argument('-alpha', type=float, default=0.1)
     parser.add_argument('-gamma', type=float, default=0.995)
@@ -37,10 +37,12 @@ def main():
     visualize_matrix(env.world, title=args.env, save_path=args.save_dir_plot + args.env + '.png')
 
     env, agent = run_algorithm(args, env, agent)
-    filename = args.env + '_' + args.agent + args.memo
-    save_q_value(agent.Q, save_path=args.save_dir_value + filename)
-    display_q_value(agent.Q, env, title=args.agent, save_path=args.save_dir_plot + filename + '.png')
     # test_algorithm(args, env, agent)
+
+    filename = args.env + '_' + args.agent + args.memo
+    save_q_value(agent, save_path=args.save_dir_value + filename)
+    display_q_value(agent, env, title=args.agent, save_path=args.save_dir_plot + filename + '.png')
+    print("Done")
 
 
 if __name__ == "__main__":

@@ -4,7 +4,7 @@ from tqdm import tqdm
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from envs import SmallGridEnv, BigGridEnv, UnistEnv
-from agents import MCAgent, SARSAAgent, QlearningAgent
+from agents import MCAgent, SARSAAgent, QlearningAgent, DoubleQlearningAgent
 
 
 def str2bool(v):
@@ -39,6 +39,9 @@ def get_agent(args, n_state, n_action):
     elif agent_name == "QlearningAgent":
         return QlearningAgent(n_state, n_action, epsilon=args.epsilon, alpha=args.alpha,
                               gamma=args.gamma, seed=args.seed)
+    elif agent_name == "DoubleQlearningAgent":
+        return DoubleQlearningAgent(n_state, n_action, epsilon=args.epsilon, alpha=args.alpha,
+                                    gamma=args.gamma, seed=args.seed)
     else:
         raise Exception("There is no agent '{}'".format(agent_name))
 
@@ -61,7 +64,7 @@ def run_algorithm(args, env, agent):
             # End of the episode
             agent.update_q()    # Update Q value using sampled episode
             agent.update_epsilon(100 / (e_idx + 1))     # Decaying epsilon
-    elif (agent_name == "SARSAAgent") or (agent_name == "QlearningAgent"):
+    elif (agent_name == "SARSAAgent") or (agent_name == "QlearningAgent") or (agent_name == "DoubleQlearningAgent"):
         for e_idx in episode:
             state = env.reset()
             action = agent.get_action(state)
@@ -71,7 +74,7 @@ def run_algorithm(args, env, agent):
                 action_prime = agent.get_action(state_prime)         # Get next action
                 if agent_name == "SARSAAgent":
                     agent.update_q(state, action, reward, state_prime, action_prime, done)
-                else:   # agent_name == "QlearningAgent"
+                else:   # (agent_name == "QlearningAgent") or (agent_name == "DoubleQlearningAgent")
                     agent.update_q(state, action, reward, state_prime, done)
                 state = state_prime
                 action = action_prime
@@ -159,13 +162,19 @@ def plot_pi_v(Pi,
     plt.show()
 
 
-def display_q_value(Q,
+def display_q_value(agent,
                     env,
                     title='',
                     fig_size=8,
                     text_fs=8,
                     title_fs=15,
                     save_path=''):
+    try:
+        Q = agent.Q
+    except:
+        print("There is no Q value in `DoubleQlearningAgent`. "
+              "So, use `agent.Q_A` instead of `agent.Q`.")
+        Q = agent.Q_A
     n_state, n_action = Q.shape
 
     # Triangle patches for each action
@@ -218,8 +227,10 @@ def display_q_value(Q,
         plt.savefig(save_path)
 
 
-def save_q_value(Q,
+def save_q_value(agent,
                  save_path=''):
     if save_path != '':
-        np.save(file=save_path, arr=Q)
-
+        try:
+            np.save(file=save_path, arr=agent.Q)
+        except:
+            np.savez(save_path, Q_A=agent.Q_A, Q_B=agent.Q_B)

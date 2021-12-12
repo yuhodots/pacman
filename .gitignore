@@ -1,4 +1,6 @@
 notebook/tutorials
+results/q_value/*.npy
+results/q_value/*.npz
 .idea
 __pycache__
 .ipynb_checkpoints

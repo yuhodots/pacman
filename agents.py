@@ -102,3 +102,49 @@ class QlearningAgent(object):
         else:
             action = np.argmax(self.Q[state])
         return action
+
+
+class DoubleQlearningAgent(object):
+    def __init__(self, n_state, n_action, alpha=0.5, epsilon=1.0, gamma=0.999, seed=42):
+        np.random.seed(seed)
+        self.n_state = n_state
+        self.n_action = n_action
+        self.alpha_init = alpha
+        self.alpha = alpha
+        self.epsilon = epsilon
+        self.gamma = gamma
+
+        self.Q_A = np.zeros([n_state, n_action])
+        self.Q_B = np.zeros([n_state, n_action])
+
+    def update_q(self, state, action, reward, state_prime, done):
+        if np.random.uniform() < 0.5:
+            Q_update = self.Q_A
+            Q_target = self.Q_B
+        else:
+            Q_update = self.Q_B
+            Q_target = self.Q_A
+
+        action_prime = np.argmax(Q_update[state_prime])
+
+        if done:
+            td_target = reward
+        else:
+            td_target = reward + self.gamma * Q_target[state_prime][action_prime]
+
+        Q_old = Q_update[state][action]
+        td_error = td_target - Q_old
+        Q_update[state, action] = Q_old + self.alpha * td_error
+
+    def update_epsilon(self, epsilon):
+        self.epsilon = np.min([epsilon, 1.0])
+
+    def update_alpha(self, alpha):
+        self.alpha = np.min([alpha, self.alpha_init])
+
+    def get_action(self, state):
+        if np.random.uniform() < self.epsilon:
+            action = np.random.randint(0, high=self.n_action)
+        else:
+            action = np.argmax(self.Q_A[state])
+        return action
