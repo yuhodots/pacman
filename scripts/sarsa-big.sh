@@ -8,4 +8,5 @@ python run.py \
     -gamma 0.99 \
     -n_episode 1000000 \
     -seed 42 \
-    -save_dir './results/'
+    -save_dir_plot './results/plot/' \
+    -save_dir_value './results/q_value/'

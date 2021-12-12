@@ -216,3 +216,10 @@ def display_q_value(Q,
     plt.show()
     if save_path != '':
         plt.savefig(save_path)
+
+
+def save_q_value(Q,
+                 save_path=''):
+    if save_path != '':
+        np.save(file=save_path, arr=Q)
+
