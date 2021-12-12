@@ -4,7 +4,7 @@ from tqdm import tqdm
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from envs import SmallGridEnv, BigGridEnv, UnistEnv
-from agents import MCAgent, SARSAAgent
+from agents import MCAgent, SARSAAgent, QlearningAgent
 
 
 def str2bool(v):
@@ -36,6 +36,9 @@ def get_agent(args, n_state, n_action):
         return MCAgent(n_state, n_action, epsilon=args.epsilon, alpha=args.alpha, gamma=args.gamma, seed=args.seed)
     elif agent_name == "SARSAAgent":
         return SARSAAgent(n_state, n_action, epsilon=args.epsilon, alpha=args.alpha, gamma=args.gamma, seed=args.seed)
+    elif agent_name == "QlearningAgent":
+        return QlearningAgent(n_state, n_action, epsilon=args.epsilon, alpha=args.alpha,
+                              gamma=args.gamma, seed=args.seed)
     else:
         raise Exception("There is no agent '{}'".format(agent_name))
 
@@ -50,24 +53,27 @@ def run_algorithm(args, env, agent):
             action = agent.get_action(state)
             done = False
             while not done:
-                next_state, reward, done, info = env.step(action)   # step
-                next_action = agent.get_action(next_state)          # Get next action
+                state_prime, reward, done, info = env.step(action)   # step
+                next_action = agent.get_action(state_prime)          # Get next action
                 agent.save_sample(state, action, reward, done)      # Store samples
-                state = next_state
+                state = state_prime
                 action = next_action
             # End of the episode
             agent.update_q()    # Update Q value using sampled episode
             agent.update_epsilon(100 / (e_idx + 1))     # Decaying epsilon
-    elif agent_name == "SARSAAgent":
+    elif (agent_name == "SARSAAgent") or (agent_name == "QlearningAgent"):
         for e_idx in episode:
             state = env.reset()
             action = agent.get_action(state)
             done = False
             while not done:
-                next_state, reward, done, info = env.step(action)   # step
-                action_prime = agent.get_action(next_state)         # Get next action
-                agent.update_q(state, action, reward, next_state, action_prime, done)  # online learning
-                state = next_state
+                state_prime, reward, done, info = env.step(action)   # step
+                action_prime = agent.get_action(state_prime)         # Get next action
+                if agent_name == "SARSAAgent":
+                    agent.update_q(state, action, reward, state_prime, action_prime, done)
+                else:   # agent_name == "QlearningAgent"
+                    agent.update_q(state, action, reward, state_prime, done)
+                state = state_prime
                 action = action_prime
             agent.update_epsilon(100 / (e_idx + 1))     # Decaying epsilon
     else:

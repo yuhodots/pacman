@@ -68,3 +68,37 @@ class SARSAAgent(object):
         else:
             action = np.argmax(self.Q[state])       # greedy action
         return action
+
+
+class QlearningAgent(object):
+    def __init__(self, n_state, n_action, alpha=0.5, epsilon=1.0, gamma=0.999, seed=42):
+        np.random.seed(seed)
+        self.n_state = n_state
+        self.n_action = n_action
+        self.alpha_init = alpha
+        self.alpha = alpha
+        self.epsilon = epsilon
+        self.gamma = gamma
+        self.Q = np.zeros([n_state, n_action])
+
+    def update_q(self, state, action, reward, state_prime, done):
+        Q_old = self.Q[state][action]
+        if done:
+            td_target = reward
+        else:
+            td_target = reward + self.gamma * np.max(self.Q[state_prime])
+        td_error = td_target - Q_old
+        self.Q[state, action] = Q_old + self.alpha * td_error
+
+    def update_epsilon(self, epsilon):
+        self.epsilon = np.min([epsilon, 1.0])
+
+    def update_alpha(self, alpha):
+        self.alpha = np.min([alpha, self.alpha_init])
+
+    def get_action(self, state):
+        if np.random.uniform() < self.epsilon:
+            action = np.random.randint(0, high=self.n_action)
+        else:
+            action = np.argmax(self.Q[state])
+        return action

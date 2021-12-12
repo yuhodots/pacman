@@ -12,7 +12,7 @@ def get_arguments():
 
     # Agent
     parser.add_argument('-agent', type=str, default='MCAgent',
-                        choices=['MCAgent', 'SARSAAgent'])
+                        choices=['MCAgent', 'SARSAAgent', 'QlearningAgent'])
     parser.add_argument('-epsilon', type=float, default=1.0)
     parser.add_argument('-alpha', type=float, default=0.1)
     parser.add_argument('-gamma', type=float, default=0.995)
@@ -22,6 +22,7 @@ def get_arguments():
     parser.add_argument('-n_tick', type=int, default=1000)
     parser.add_argument('-seed', type=int, default=42)
     parser.add_argument('-save_dir', type=str, default='./results/')
+    parser.add_argument('-memo', type=str, default='')
 
     return parser
 
@@ -35,7 +36,8 @@ def main():
     visualize_matrix(env.world, title=args.env, save_path=args.save_dir + args.env + '.png')
 
     env, agent = run_algorithm(args, env, agent)
-    display_q_value(agent.Q, env, title=args.agent, save_path=args.save_dir + args.env + '_' + args.agent + '.png')
+    filename = args.env + '_' + args.agent + args.memo + '.png'
+    display_q_value(agent.Q, env, title=args.agent, save_path=args.save_dir + filename)
     # test_algorithm(args, env, agent)
 
 
