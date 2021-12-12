@@ -11,6 +11,7 @@ class SmallGridEnv(gym.Env):
         self.agent_pos = self.init_agent_pos[:]
         self.ghost_pos = [[1, 1], [0, 4]]
         self.wall_pos = [[3, 0], [3, 1], [3, 3], [1, 2], [2, 3]]
+        self.encounter_wall = False
         self.star_pos = self.init_star_pos[:]
 
         n = self.world_shape[0] * self.world_shape[1] - len(self.wall_pos)
@@ -46,11 +47,14 @@ class SmallGridEnv(gym.Env):
 
         # out of the map
         if agent_pos[0] < 0 or agent_pos[0] > 4:
+            self.encounter_wall = True
             agent_pos = pos
         if agent_pos[1] < 0 or agent_pos[1] > 4:
+            self.encounter_wall = True
             agent_pos = pos
         # wall
         if agent_pos in self.wall_pos:
+            self.encounter_wall = True
             agent_pos = pos
 
         return agent_pos
@@ -66,6 +70,7 @@ class SmallGridEnv(gym.Env):
             self.world[v[0], v[1]] = 3
         self.agent_pos = self.init_agent_pos[:]
         self.star_pos = self.init_star_pos[:]
+        self.encounter_wall = False
         return self._get_obs()
 
     def render(self):
@@ -113,9 +118,13 @@ class SmallGridEnv(gym.Env):
             self.star_pos.remove(pos)
             return -1
         elif self.world[pos[0], pos[1]] == 2:
-            return -10  # meet ghost
+            return -100  # meet ghost
         else:
-            return -1
+            if self.encounter_wall:
+                self.encounter_wall = False
+                return -10
+            else:
+                return -1
 
     def _is_done(self):
         if self.agent_pos in self.ghost_pos:  # meet ghost
@@ -143,6 +152,7 @@ class BigGridEnv(gym.Env):
                          [6, 9], [7, 3], [7, 4], [7, 6], [7, 7],
                          [8, 1], [8, 4], [8, 6], [8, 9], [9, 1],
                          [9, 2], [9, 4], [9, 6], [9, 8], [9, 9]]
+        self.encounter_wall = False
         self.ghost_a_road = [[1, 4], [1, 5], [1, 6]]
         self.ghost_b_road = [[6, 2], [6, 3], [6, 4], [6, 5], [6, 6], [6, 7], [6, 8]]
 
@@ -208,11 +218,14 @@ class BigGridEnv(gym.Env):
 
             # out of the map
             if agent_pos[0] < 0 or agent_pos[0] > 10:
+                self.encounter_wall = True
                 agent_pos = pos
             if agent_pos[1] < 0 or agent_pos[1] > 10:
+                self.encounter_wall = True
                 agent_pos = pos
             # wall
             if agent_pos in self.wall_pos:
+                self.encounter_wall = True
                 agent_pos = pos
 
         return agent_pos
@@ -229,6 +242,7 @@ class BigGridEnv(gym.Env):
         self.agent_pos = self.init_agent_pos[:]
         self.ghost_pos = self.init_ghost_pos[:]
         self.star_pos = self.init_star_pos[:]
+        self.encounter_wall = False
         return self._get_obs()
 
     def render(self):
@@ -256,10 +270,18 @@ class BigGridEnv(gym.Env):
     def close(self):
         pass
 
+    def get_selected_obs(self, agent_pos):
+        obs = self._get_obs_from_agent_pos(agent_pos)
+        return obs
+
     def _get_obs(self):
-        obs_agent = self.agent_pos[0] * self.world_shape[1] + self.agent_pos[1]
-        obs_wall = len([item for item in self.wall_pos if (item[0] < self.agent_pos[0]) or
-                      ((item[0] == self.agent_pos[0]) and (item[1] < self.agent_pos[1]))])
+        obs = self._get_obs_from_agent_pos(self.agent_pos)
+        return obs
+
+    def _get_obs_from_agent_pos(self, agent_pos):
+        obs_agent = agent_pos[0] * self.world_shape[1] + agent_pos[1]
+        obs_wall = len([item for item in self.wall_pos if (item[0] < agent_pos[0]) or
+                        ((item[0] == agent_pos[0]) and (item[1] < agent_pos[1]))])
         obs_star = self._get_obs_star()
         obs_ghost = self._get_obs_star()
 
@@ -289,11 +311,15 @@ class BigGridEnv(gym.Env):
         pos = self.agent_pos
         if self.world[pos[0], pos[1]] == 1:
             self.star_pos.remove(pos)
-            return 50  # star point
+            return 100  # star point
         elif self.world[pos[0], pos[1]] == 2:
-            return -10  # meet ghost
+            return -100  # meet ghost
         else:
-            return -1
+            if self.encounter_wall:
+                self.encounter_wall = False
+                return -10
+            else:
+                return -1
 
     def _is_done(self):
         if self.agent_pos in self.ghost_pos:  # meet ghost
@@ -322,6 +348,7 @@ class UnistEnv(gym.Env):
                          [6, 9], [7, 1], [7, 3], [7, 5], [7, 8],
                          [8, 1], [8, 3], [8, 5], [8, 8], [9, 1],
                          [9, 3], [9, 5], [9, 8]]
+        self.encounter_wall = False
         self.ghost_a_road = [[0, 0], [0, 1], [0, 2], [0, 3], [0, 4], [0, 5], [0, 6]]
         self.ghost_b_road = [[5, 6], [5, 7], [5, 8], [5, 9], [5, 10]]
 
@@ -387,11 +414,14 @@ class UnistEnv(gym.Env):
 
             # out of the map
             if agent_pos[0] < 0 or agent_pos[0] > 10:
+                self.encounter_wall = True
                 agent_pos = pos
             if agent_pos[1] < 0 or agent_pos[1] > 10:
+                self.encounter_wall = True
                 agent_pos = pos
             # wall
             if agent_pos in self.wall_pos:
+                self.encounter_wall = True
                 agent_pos = pos
 
         return agent_pos
@@ -408,6 +438,7 @@ class UnistEnv(gym.Env):
         self.agent_pos = self.init_agent_pos[:]
         self.ghost_pos = self.init_ghost_pos[:]
         self.star_pos = self.init_star_pos[:]
+        self.encounter_wall = False
         return self._get_obs()
 
     def render(self):
@@ -435,10 +466,18 @@ class UnistEnv(gym.Env):
     def close(self):
         pass
 
+    def get_selected_obs(self, agent_pos):
+        obs = self._get_obs_from_agent_pos(agent_pos)
+        return obs
+
     def _get_obs(self):
-        obs_agent = self.agent_pos[0] * self.world_shape[1] + self.agent_pos[1]
-        obs_wall = len([item for item in self.wall_pos if (item[0] < self.agent_pos[0]) or
-                        ((item[0] == self.agent_pos[0]) and (item[1] < self.agent_pos[1]))])
+        obs = self._get_obs_from_agent_pos(self.agent_pos)
+        return obs
+
+    def _get_obs_from_agent_pos(self, agent_pos):
+        obs_agent = agent_pos[0] * self.world_shape[1] + agent_pos[1]
+        obs_wall = len([item for item in self.wall_pos if (item[0] < agent_pos[0]) or
+                        ((item[0] == agent_pos[0]) and (item[1] < agent_pos[1]))])
         obs_star = self._get_obs_star()
         obs_ghost = self._get_obs_star()
 
@@ -468,11 +507,15 @@ class UnistEnv(gym.Env):
         pos = self.agent_pos
         if self.world[pos[0], pos[1]] == 1:
             self.star_pos.remove(pos)
-            return 50  # star point
+            return 100  # star point
         elif self.world[pos[0], pos[1]] == 2:
-            return -10  # meet ghost
+            return -100  # meet ghost
         else:
-            return -1
+            if self.encounter_wall:
+                self.encounter_wall = False
+                return -10
+            else:
+                return -1
 
     def _is_done(self):
         if self.agent_pos in self.ghost_pos:  # meet ghost

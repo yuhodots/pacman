@@ -7,49 +7,63 @@ This repository contains the implementation of a simple reinforcement learning t
 *<Taken from: https://pixabay.com/images/id-1332694/>*
 
 
-## Contents
+## Algorithms
 
-1. Value Iteration
-2. Policy Iteration
-3. Monte-Carlo Method
-4. SARSA
-5. Q Learning
-6. Actor-Critic Method
-7. REINFORCE
-
-## Overview
-
-### Environments
-
-#### SmallGridEnv
-
-In this environment, the ghost does not move. And since there is only one star, the episode ends when the agent arrives at the star. The figure below is a visualization of the environment through `visualize_matrix()`. Visualization is also possible through the `env.render()` function.
-
-- Observation space: 5 x 5 grid world - wall positon 
-  - `observation_space.n`  = (25 - 5) = *20*
-
-- Action space: { up: 0, down: 1, left: 2, right: 3 }
-- Reward: { ghost: -10, others: -1 }
-
-![img](./img/SGE.png)
-
-#### BigGridEnv
-
-In this environment, the ghost randomly moves left and right. And since there are multiple stars, the episode ends when all the stars are obtained. The visualization method is the same as SmallGridEnv.
-
-- Observation space: (11 x 11 grid world - wall positon) x (Star state) x (Ghost position state)
-  - `observation_space.n` = (121 - 40) * (2^4) * (3 * 7) = *27216*
-
-- Action space: { up: 0, down: 1, left: 2, right: 3 }
-- Reward: { star: 50, ghost: -10, others: -1 }
-
-![img](./img/BGE.png)
+1. Monte-Carlo Method
+2. SARSA
+2. Q-learning
+2. Double Q-learning
+2. Value Approximation
+2. REINFORCE
+2. Actor-Critic
+2. TRPO, PPO, DDPG
 
 ## How To Run
 
+You can execute code in `scripts` directory. The name of the script file means *`algorithm-environment.sh`*.
+
 ```sh
-# TBA
+cd scripts/
+sh ${runfile name} 	# Ex) sh mc-small.sh
 ```
+
+The results of code execution can be found in the `results` directory or terminal window. Below are examples of results for Q value.
+
+
+
+## Environments
+
+### SmallGridEnv
+
+In this environment, the ghost *does not move*. And since there is only one star, the episode ends when the agent arrives at the star. The figure below is a visualization of the environment through `visualize_matrix()`. Visualization is also possible through the `env.render()` function.
+
+- Observation space: 5 x 5 grid world - wall positon 
+  - `observation_space.n`  = (25 - 5) = *20*
+- Action space: { up: 0, down: 1, left: 2, right: 3 }
+- Reward: { ghost: -100, wall: -5, others: -1 }
+  - Encountering a wall does not end the episode. The agent is just stationary as it is.
+
+
+![img](./img/SGE.png)
+
+### BigGridEnv
+
+In this environment, the ghost *randomly moves left and right*. And since there are multiple stars, the episode ends when all the stars are obtained. The visualization method is the same as SmallGridEnv.
+
+- Observation space: (11 x 11 grid world - wall positon) x (Star state) x (Ghost position state)
+  - `observation_space.n` = (121 - 40) * (2^4) * (3 * 7) = *27216*
+- Action space: { up: 0, down: 1, left: 2, right: 3 }
+- Reward: { star: 100, ghost: -100, wall:-5 ,others: -1 }
+  - Encountering a wall does not end the episode. The agent is just stationary as it is.
+
+
+![img](./img/BGE.png)
+
+### UnistEnv
+
+There is no big difference from *BigGridEnv*. It's just that the wall position and the ghost position have changed. And the wall looks like *UNIST* :kissing_smiling_eyes:
+
+![img](./img/UGE.png)
 
 ## References
 
