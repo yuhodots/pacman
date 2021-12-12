@@ -8,7 +8,7 @@ This repository contains the implementation of a simple reinforcement learning t
 
 ## Algorithms
 
-The algorithms in this repository are table-based classical reinforcement learning algorithms that do not use the neural network.
+The algorithms in this repository focus on table-based classical reinforcement learning algorithms that do not use the deep neural network.
 
 1. Monte-Carlo Method
 2. SARSA
@@ -31,6 +31,12 @@ sh ${runfile name} 	# Ex) sh mc-small.sh
 The results of code execution can be found in the `results` directory or terminal window. Below are examples of results for Q value.
 
 ![img](./img/Qvalue.png)
+
+### Requirements
+
+```python
+# TBA
+```
 
 ## Environments
 

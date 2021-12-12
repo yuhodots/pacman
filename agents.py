@@ -1,4 +1,8 @@
 import numpy as np
+from gym import spaces
+from sklearn.kernel_approximation import RBFSampler
+import sklearn.pipeline
+import sklearn.preprocessing
 
 
 class MCAgent(object):
@@ -148,3 +152,52 @@ class DoubleQlearningAgent(object):
         else:
             action = np.argmax(self.Q_A[state])
         return action
+
+
+class LinearApprox(object):
+    def __init__(self, n_state, n_action, alpha=0.01, epsilon=0.1, gamma=1.0, seed=42):
+        np.random.seed(seed)
+        self.n_action = n_action
+        self.w = np.zeros((n_action, 400))
+        self.set_featurizer(n_state)
+        self.epsilon = alpha
+        self.alpha = epsilon
+        self.gamma = gamma
+
+    def set_featurizer(self, n_state):
+        obs_space = spaces.Discrete(n_state)
+        observation_examples = np.expand_dims(np.array([obs_space.sample() for _ in range(10**6)]), -1)
+        self.scaler = sklearn.preprocessing.StandardScaler()
+        self.scaler.fit(observation_examples)
+        self.featurizer = sklearn.pipeline.FeatureUnion([
+            ("rbf1", RBFSampler(gamma=5.0, n_components=100)),
+            ("rbf2", RBFSampler(gamma=2.0, n_components=100)),
+            ("rbf3", RBFSampler(gamma=1.0, n_components=100)),
+            ("rbf4", RBFSampler(gamma=0.5, n_components=100))
+        ])
+        self.featurizer.fit(self.scaler.transform(observation_examples))
+
+    def featurize_state(self, state):
+        scaled = self.scaler.transform(np.expand_dims([state], -1))
+        featurized = self.featurizer.transform(scaled)
+        return featurized
+
+    def Q(self, state, action):
+        value = state.dot(self.w[action])
+        return value
+
+    def get_action(self, state, test=False):
+        probs = np.ones(self.n_action, dtype=float) * self.epsilon / self.n_action
+        best_action = np.argmax([self.Q(state, action) for action in range(self.n_action)])
+        probs[best_action] += (1.0 - self.epsilon)
+        if test:
+            probs = np.zeros(self.n_action, dtype=float)
+            probs[best_action] += 1.0
+        action = np.random.choice(self.n_action, p=probs)
+        return action
+
+    def update_epsilon(self, epsilon):
+        self.epsilon = np.min([epsilon, 0.1])
+
+    def update_alpha(self, alpha):
+        self.alpha = np.min([alpha, 0.01])

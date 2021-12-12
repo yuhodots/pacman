@@ -3,8 +3,10 @@ import numpy as np
 from tqdm import tqdm
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
+from matplotlib import animation
+
 from envs import SmallGridEnv, BigGridEnv, UnistEnv
-from agents import MCAgent, SARSAAgent, QlearningAgent, DoubleQlearningAgent
+from agents import MCAgent, SARSAAgent, QlearningAgent, DoubleQlearningAgent, LinearApprox
 
 
 def str2bool(v):
@@ -30,7 +32,9 @@ def get_env(args):
         raise Exception("There is no env '{}'".format(env_name))
 
 
-def get_agent(args, n_state, n_action):
+def get_agent(args,
+              n_state,
+              n_action):
     agent_name = args.agent
     if agent_name == "MCAgent":
         return MCAgent(n_state, n_action, epsilon=args.epsilon, alpha=args.alpha, gamma=args.gamma, seed=args.seed)
@@ -42,11 +46,16 @@ def get_agent(args, n_state, n_action):
     elif agent_name == "DoubleQlearningAgent":
         return DoubleQlearningAgent(n_state, n_action, epsilon=args.epsilon, alpha=args.alpha,
                                     gamma=args.gamma, seed=args.seed)
+    elif agent_name == "LinearApprox":
+        return LinearApprox(n_state, n_action, epsilon=args.epsilon, alpha=args.alpha, gamma=args.gamma, seed=args.seed)
     else:
         raise Exception("There is no agent '{}'".format(agent_name))
 
 
-def run_algorithm(args, env, agent):
+def run_algorithm(args,
+                  env,
+                  eval_env,
+                  agent):
     agent_name = args.agent
     episode = tqdm(range(args.n_episode), desc="episode")
 
@@ -79,13 +88,64 @@ def run_algorithm(args, env, agent):
                 state = state_prime
                 action = action_prime
             agent.update_epsilon(100 / (e_idx + 1))     # Decaying epsilon
+    elif agent_name == "LinearApprox":
+        plt_actions = np.zeros(agent.n_action)
+        episode_rewards = np.zeros(args.n_episode)
+
+        for e_idx in episode:
+            state = env.reset()
+            state = agent.featurize_state(state)
+            action = agent.get_action(state)
+            done = False
+            while not done:
+                next_state, reward, done, _ = env.step(action)
+                next_state = agent.featurize_state(next_state)
+                next_action = agent.get_action(next_state)
+
+                # Statistic for graphing
+                plt_actions[action] += 1
+                episode_rewards[e_idx] += reward
+
+                # Update weight
+                td_target = reward + agent.gamma * agent.Q(next_state, next_action)
+                td_error = agent.Q(state, action) - td_target
+                dw = td_error.dot(state)
+                agent.w[action] -= agent.alpha * dw
+
+                state = next_state
+                action = next_action
+
+            agent.update_alpha((1 - (e_idx + 1) / args.n_episode) * 0.5)
+            agent.update_epsilon((1 - (e_idx + 1) / args.n_episode) * 0.5)
+
+            if args.is_eval:
+                if (e_idx == 0) or ((e_idx + 1) % args.n_eval == 0):
+                    eval_algorithm(args, eval_env, agent, e_idx)
     else:
         raise Exception("There is no agent '{}'".format(agent_name))
 
     return env, agent
 
 
-def test_algorithm(args, env, agent):
+def eval_algorithm(args,
+                   eval_env,
+                   agent,
+                   epoch):
+    state, done, ep_ret, ep_len = eval_env.reset(), False, 0, 0
+    frames = []
+    while not done:
+        action = agent.get_action(agent.featurize_state(state), test=True)
+        state, reward, done, _ = eval_env.step(action)
+        frame = visualize_matrix(eval_env.world, title=args.env + ", epoch:{}".format(epoch + 1))
+        frames.append(frame)
+        ep_ret += reward
+        ep_len += 1
+    display_frames_as_gif(args, frames, epoch)
+
+
+def test_algorithm(args,
+                   env,
+                   agent):
 
     return env, agent
 
@@ -117,6 +177,8 @@ def visualize_matrix(M,
     plt.show()
     if save_path != '':
         plt.savefig(save_path)
+    fig.canvas.draw()
+    return np.array(fig.canvas.renderer._renderer)
 
 
 def plot_pi_v(Pi,
@@ -234,3 +296,17 @@ def save_q_value(agent,
             np.save(file=save_path, arr=agent.Q)
         except:
             np.savez(save_path, Q_A=agent.Q_A, Q_B=agent.Q_B)
+
+
+def display_frames_as_gif(args,
+                          frames,
+                          epoch):
+    patch = plt.imshow(frames[0])
+
+    def animate(i):
+        patch.set_data(frames[i])
+
+    filename = args.save_dir_animate + args.env + '_' + args.agent + args.memo + str(int(epoch + 1))
+    anim = animation.FuncAnimation(plt.gcf(), animate, frames=len(frames), interval=10)
+    anim.save(filename + '.gif', writer='imagemagick', fps=30, dpi=100)
+    plt.close(anim._fig)
