@@ -1,7 +1,7 @@
 #! /bin/sh
 cd ../
 python run.py \
-    -env 'SmallGridEnv' \
+    -env 'BigGridEnv' \
     -agent 'LinearApprox' \
     -epsilon 0.1 \
     -alpha 0.01 \
