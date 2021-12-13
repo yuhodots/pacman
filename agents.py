@@ -1,3 +1,9 @@
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+import torch.optim as optim
+from torch.distributions import Categorical, Normal
+
 import numpy as np
 from gym import spaces
 from sklearn.kernel_approximation import RBFSampler
@@ -201,3 +207,89 @@ class LinearApprox(object):
 
     def update_alpha(self, alpha):
         self.alpha = np.min([alpha, 0.01])
+
+
+class ActorCritic(nn.Module):
+    def __init__(self, n_state, n_action, lr=0.0002, gamma=0.999):
+        super(ActorCritic, self).__init__()
+        self.lr = lr
+        self.gamma = gamma
+        self.n_action = n_action
+        self.set_featurizer(n_state)
+        self.shared_layer = nn.Linear(400, 256)
+        self.policy_layer = nn.Linear(256, n_action)
+        self.value_layer = nn.Linear(256, 1)
+        self.optimizer = optim.Adam(self.parameters(), lr=lr)
+        self.data = []
+
+    def set_featurizer(self, n_state):
+        obs_space = spaces.Discrete(n_state)
+        observation_examples = np.expand_dims(np.array([obs_space.sample() for _ in range(10**6)]), -1)
+        self.scaler = sklearn.preprocessing.StandardScaler()
+        self.scaler.fit(observation_examples)
+        self.featurizer = sklearn.pipeline.FeatureUnion([
+            ("rbf1", RBFSampler(gamma=5.0, n_components=100)),
+            ("rbf2", RBFSampler(gamma=2.0, n_components=100)),
+            ("rbf3", RBFSampler(gamma=1.0, n_components=100)),
+            ("rbf4", RBFSampler(gamma=0.5, n_components=100))
+        ])
+        self.featurizer.fit(self.scaler.transform(observation_examples))
+
+    def featurize_state(self, state):
+        scaled = self.scaler.transform(np.expand_dims([state], -1))
+        featurized = self.featurizer.transform(scaled)
+        return featurized
+
+    def policy(self, state, softmax_dim=0):
+        x = F.relu(self.shared_layer(state))
+        x = self.policy_layer(x)
+        prob = F.softmax(x, dim=softmax_dim)
+        return Categorical(prob)
+
+    def get_action(self, state):
+        dist = self.policy(torch.from_numpy(state).float())
+        action = dist.sample().item()
+        return action
+
+    def value(self, state):
+        x = F.relu(self.shared_layer(state))
+        value = self.value_layer(x)
+        return value
+
+    def save(self, transition):
+        self.data.append(transition)
+
+    def get_batch(self):
+        state_list, action_list, reward_list, next_state_list, done_list = [], [], [], [], []
+        for experience in self.data:
+            state, action, reward, next_state, done = experience
+            state_list.append(state)
+            action_list.append([action])
+            reward_list.append([reward / 100.0])
+            next_state_list.append(next_state)
+            done_list.append([0.0 if done else 1.0])
+
+        state_batch = torch.tensor(state_list, dtype=torch.float)
+        action_batch = torch.tensor(action_list)
+        reward_batch = torch.tensor(reward_list, dtype=torch.float)
+        next_state_batch = torch.tensor(next_state_list, dtype=torch.float)
+        done_batch = torch.tensor(done_list, dtype=torch.float)
+        self.data = []
+
+        return state_batch, action_batch, reward_batch, next_state_batch, done_batch
+
+    def update(self):
+        state, action, reward, next_state, done = self.get_batch()
+        td_target = reward + self.gamma * self.value(next_state) * done
+        td_error = td_target - self.value(state)
+
+        dist = self.policy(state, softmax_dim=1)
+        prob_action = dist.probs.gather(1, action)
+        loss_actor = - torch.log(prob_action) * td_error.detach()
+        # loss_critic = F.smooth_l1_loss(self.value(state), td_target.detach())
+        loss_critic = (self.value(state) - td_target.detach()) ** 2
+        loss = loss_actor + loss_critic
+
+        self.optimizer.zero_grad()
+        loss.mean().backward()
+        self.optimizer.step()

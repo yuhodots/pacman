@@ -14,14 +14,16 @@ def get_arguments():
     # Agent
     parser.add_argument('-agent', type=str, default='MCAgent',
                         choices=['MCAgent', 'SARSAAgent', 'QlearningAgent', 'DoubleQlearningAgent',
-                                 'LinearApprox'])
+                                 'LinearApprox', 'ActorCritic'])
     parser.add_argument('-epsilon', type=float, default=1.0)
     parser.add_argument('-alpha', type=float, default=0.1)
     parser.add_argument('-gamma', type=float, default=0.995)
+    parser.add_argument('-lr', type=float, default=0.0002)
 
     # Experiment option
     parser.add_argument('-step_ghost', type=str2bool, default=False)
     parser.add_argument('-n_episode', type=int, default=10000)
+    parser.add_argument('-update_step', type=int, default=10)
     parser.add_argument('-seed', type=int, default=42)
     parser.add_argument('-save_dir_plot', type=str, default='./results/grid_plot/')
     parser.add_argument('-save_dir_value', type=str, default='./results/q_value/')
@@ -44,9 +46,9 @@ def main():
     filename = args.env + '_' + args.agent + args.memo
     plot_rewards(args.n_episode, rewards, save_path=args.save_dir_reward + filename + '_rewards.png')
     make_animation(args, env, agent, save_path=args.save_dir_animate + filename)
-    # test_algorithm(args, env, agent)
+    # test_algorithm(args, env, agent) - Not implemented yet
 
-    if not ("Approx" in args.agent):
+    if "Agent" in args.agent:
         save_q_value(agent, save_path=args.save_dir_value + filename)
         display_q_value(agent, env, title=args.agent, save_path=args.save_dir_plot + filename + '_q-value.png')
     print("Code execution is complete.")

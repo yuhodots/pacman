@@ -17,7 +17,6 @@ The algorithms in this repository focus on table-based classical reinforcement l
 2. Q-learning
 2. Double Q-learning
 2. Value Approximation
-2. Actor-Critic
 2. REINFORCE
 
 ## How To Run

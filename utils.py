@@ -6,7 +6,7 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 from matplotlib import animation
 
 from envs import SmallGridEnv, BigGridEnv, UnistEnv
-from agents import MCAgent, SARSAAgent, QlearningAgent, DoubleQlearningAgent, LinearApprox
+from agents import MCAgent, SARSAAgent, QlearningAgent, DoubleQlearningAgent, LinearApprox, ActorCritic
 
 
 def str2bool(v):
@@ -48,6 +48,8 @@ def get_agent(args,
                                     gamma=args.gamma, seed=args.seed)
     elif agent_name == "LinearApprox":
         return LinearApprox(n_state, n_action, epsilon=args.epsilon, alpha=args.alpha, gamma=args.gamma, seed=args.seed)
+    elif agent_name == "ActorCritic":
+        return ActorCritic(n_state, n_action, lr=args.lr, gamma=args.gamma)
     else:
         raise Exception("There is no agent '{}'".format(agent_name))
 
@@ -119,6 +121,27 @@ def run_algorithm(args,
 
             agent.update_alpha((1 - (e_idx + 1) / args.n_episode) * 0.5)
             agent.update_epsilon((1 - (e_idx + 1) / args.n_episode) * 0.5)
+    elif agent_name == "ActorCritic":
+        for n_epi in episode:
+            state = env.reset()
+            state = agent.featurize_state(state)
+            action = agent.get_action(state)
+            done = False
+            while not done:
+                for t in range(args.update_step):
+                    next_state, reward, done, _ = env.step(action)
+                    next_state = agent.featurize_state(next_state)
+                    next_action = agent.get_action(next_state)
+                    agent.save((state, action, reward, next_state, done))
+                    episode_rewards[n_epi] += reward
+
+                    state = next_state
+                    action = next_action
+                    if args.step_ghost:
+                        env.step_ghost()
+                    if done:
+                        break
+                agent.update()
     else:
         raise Exception("There is no agent '{}'".format(agent_name))
 
