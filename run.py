@@ -1,6 +1,6 @@
 import argparse
-from utils import str2bool
-from utils import get_env, get_agent, visualize_matrix, display_q_value, save_q_value, plot_rewards
+from utils import get_env, get_agent
+from utils import visualize_matrix, display_q_value, save_q_value, plot_rewards, make_animation, str2bool
 from utils import run_algorithm, test_algorithm
 
 
@@ -20,10 +20,8 @@ def get_arguments():
     parser.add_argument('-gamma', type=float, default=0.995)
 
     # Experiment option
+    parser.add_argument('-step_ghost', type=str2bool, default=False)
     parser.add_argument('-n_episode', type=int, default=10000)
-    parser.add_argument('-n_tick', type=int, default=1000)
-    parser.add_argument('-n_eval', type=int, default=1000)
-    parser.add_argument('-is_eval', type=str2bool, default=False)
     parser.add_argument('-seed', type=int, default=42)
     parser.add_argument('-save_dir_plot', type=str, default='./results/grid_plot/')
     parser.add_argument('-save_dir_value', type=str, default='./results/q_value/')
@@ -39,20 +37,19 @@ def main():
     args = parser.parse_args()
 
     env = get_env(args)
-    eval_env = get_env(args)
     agent = get_agent(args, n_state=env.observation_space.n, n_action=env.action_space.n)
     visualize_matrix(env.world, title=args.env, save_path=args.save_dir_plot + args.env + '.png')
 
-    env, agent, rewards = run_algorithm(args, env, eval_env, agent)
-    filename = args.env + '_' + args.agent + args.memo + '_rewards'
-    plot_rewards(args.n_episode, rewards, save_path=args.save_dir_reward + filename + '.png')
+    env, agent, rewards = run_algorithm(args, env, agent)
+    filename = args.env + '_' + args.agent + args.memo
+    plot_rewards(args.n_episode, rewards, save_path=args.save_dir_reward + filename + '_rewards.png')
+    make_animation(args, env, agent, save_path=args.save_dir_animate + filename)
     # test_algorithm(args, env, agent)
 
     if not ("Approx" in args.agent):
-        filename = args.env + '_' + args.agent + args.memo + '_q-value'
         save_q_value(agent, save_path=args.save_dir_value + filename)
-        display_q_value(agent, env, title=args.agent, save_path=args.save_dir_plot + filename + '.png')
-    print("Done")
+        display_q_value(agent, env, title=args.agent, save_path=args.save_dir_plot + filename + '_q-value.png')
+    print("Code execution is complete.")
 
 
 if __name__ == "__main__":

@@ -27,9 +27,11 @@ cd scripts/
 sh ${runfile name} 	# Ex) sh mc-small.sh
 ```
 
-The results of code execution can be found in the `results` directory or terminal window. Below are examples of results for Q value.
+The results of code execution can be found in the `results` directory or terminal window.
 
 ![img](./img/Qvalue.png)
+
+<img src="./img/UnistEnv_SARSAAgent.gif" alt="img" style="zoom: 65%;" /><img src="./img/UnistEnv_QlearningAgent.gif" alt="img" style="zoom: 65%;" />
 
 ### Requirements
 

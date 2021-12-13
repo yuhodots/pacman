@@ -54,7 +54,6 @@ def get_agent(args,
 
 def run_algorithm(args,
                   env,
-                  eval_env,
                   agent):
     agent_name = args.agent
     episode = tqdm(range(args.n_episode), desc="episode")
@@ -72,6 +71,8 @@ def run_algorithm(args,
                 agent.save_sample(state, action, reward, done)       # Store samples
                 state = state_prime
                 action = next_action
+                if args.step_ghost:
+                    env.step_ghost()
             # End of the episode
             agent.update_q()    # Update Q value using sampled episode
             agent.update_epsilon(100 / (e_idx + 1))     # Decaying epsilon
@@ -90,6 +91,8 @@ def run_algorithm(args,
                     agent.update_q(state, action, reward, state_prime, done)
                 state = state_prime
                 action = action_prime
+                if args.step_ghost:
+                    env.step_ghost()
             agent.update_epsilon(100 / (e_idx + 1))     # Decaying epsilon
     elif agent_name == "LinearApprox":
         for e_idx in episode:
@@ -111,33 +114,15 @@ def run_algorithm(args,
 
                 state = next_state
                 action = next_action
+                if args.step_ghost:
+                    env.step_ghost()
 
             agent.update_alpha((1 - (e_idx + 1) / args.n_episode) * 0.5)
             agent.update_epsilon((1 - (e_idx + 1) / args.n_episode) * 0.5)
-
-            if args.is_eval:
-                if (e_idx == 0) or ((e_idx + 1) % args.n_eval == 0):
-                    eval_algorithm(args, eval_env, agent, e_idx)
     else:
         raise Exception("There is no agent '{}'".format(agent_name))
 
     return env, agent, episode_rewards
-
-
-def eval_algorithm(args,
-                   eval_env,
-                   agent,
-                   epoch):
-    state, done, ep_ret, ep_len = eval_env.reset(), False, 0, 0
-    frames = []
-    while not done:
-        action = agent.get_action(agent.featurize_state(state), test=True)
-        state, reward, done, _ = eval_env.step(action)
-        frame = visualize_matrix(eval_env.world, title=args.env + ", epoch:{}".format(epoch + 1))
-        frames.append(frame)
-        ep_ret += reward
-        ep_len += 1
-    display_frames_as_gif(args, frames, epoch)
 
 
 def test_algorithm(args,
@@ -174,8 +159,13 @@ def visualize_matrix(M,
     plt.show()
     if save_path != '':
         plt.savefig(save_path)
+    cax = plt.gca()
+    cax.set_xticklabels([])
+    cax.set_yticklabels([])
     fig.canvas.draw()
-    return np.array(fig.canvas.renderer._renderer)
+    buf = fig.canvas.tostring_rgb()
+    ncols, nrows = fig.canvas.get_width_height()
+    return np.frombuffer(buf, dtype=np.uint8).reshape(nrows, ncols, 3)
 
 
 def plot_pi_v(Pi,
@@ -303,15 +293,35 @@ def save_q_value(agent,
             np.savez(save_path, Q_A=agent.Q_A, Q_B=agent.Q_B)
 
 
-def display_frames_as_gif(args,
-                          frames,
-                          epoch):
+def display_frames_as_gif(frames,
+                          save_path):
     patch = plt.imshow(frames[0])
 
     def animate(i):
         patch.set_data(frames[i])
 
-    filename = args.save_dir_animate + args.env + '_' + args.agent + args.memo + str(int(epoch + 1))
-    anim = animation.FuncAnimation(plt.gcf(), animate, frames=len(frames), interval=10)
-    anim.save(filename + '.gif', writer='imagemagick', fps=30, dpi=100)
+    anim = animation.FuncAnimation(plt.gcf(), animate, frames=len(frames))
+    anim.save(save_path + '.gif', writer='imagemagick', fps=5, dpi=100)
     plt.close(anim._fig)
+
+
+def make_animation(args,
+                   eval_env,
+                   agent,
+                   save_path):
+    state, done, ep_ret, ep_len = eval_env.reset(), False, 0, 0
+    frames = []
+    while not done:
+        frame = visualize_matrix(eval_env.world, title=args.env + '_' + args.agent)
+        frames.append(frame)
+        if "Approx" in args.agent:
+            action = agent.get_action(agent.featurize_state(state), test=True)
+        else:
+            action = agent.get_action(state)
+        state, reward, done, _ = eval_env.step(action)
+        ep_ret += reward
+        ep_len += 1
+        if args.step_ghost:
+            eval_env.step_ghost()
+    display_frames_as_gif(frames, save_path)
+    print("animation creation is completed.")
