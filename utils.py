@@ -58,6 +58,7 @@ def run_algorithm(args,
                   agent):
     agent_name = args.agent
     episode = tqdm(range(args.n_episode), desc="episode")
+    episode_rewards = np.zeros(args.n_episode)
 
     if agent_name == "MCAgent":
         for e_idx in episode:
@@ -66,8 +67,9 @@ def run_algorithm(args,
             done = False
             while not done:
                 state_prime, reward, done, info = env.step(action)   # step
+                episode_rewards[e_idx] += reward
                 next_action = agent.get_action(state_prime)          # Get next action
-                agent.save_sample(state, action, reward, done)      # Store samples
+                agent.save_sample(state, action, reward, done)       # Store samples
                 state = state_prime
                 action = next_action
             # End of the episode
@@ -81,6 +83,7 @@ def run_algorithm(args,
             while not done:
                 state_prime, reward, done, info = env.step(action)   # step
                 action_prime = agent.get_action(state_prime)         # Get next action
+                episode_rewards[e_idx] += reward
                 if agent_name == "SARSAAgent":
                     agent.update_q(state, action, reward, state_prime, action_prime, done)
                 else:   # (agent_name == "QlearningAgent") or (agent_name == "DoubleQlearningAgent")
@@ -89,9 +92,6 @@ def run_algorithm(args,
                 action = action_prime
             agent.update_epsilon(100 / (e_idx + 1))     # Decaying epsilon
     elif agent_name == "LinearApprox":
-        plt_actions = np.zeros(agent.n_action)
-        episode_rewards = np.zeros(args.n_episode)
-
         for e_idx in episode:
             state = env.reset()
             state = agent.featurize_state(state)
@@ -101,9 +101,6 @@ def run_algorithm(args,
                 next_state, reward, done, _ = env.step(action)
                 next_state = agent.featurize_state(next_state)
                 next_action = agent.get_action(next_state)
-
-                # Statistic for graphing
-                plt_actions[action] += 1
                 episode_rewards[e_idx] += reward
 
                 # Update weight
@@ -124,7 +121,7 @@ def run_algorithm(args,
     else:
         raise Exception("There is no agent '{}'".format(agent_name))
 
-    return env, agent
+    return env, agent, episode_rewards
 
 
 def eval_algorithm(args,
@@ -222,6 +219,14 @@ def plot_pi_v(Pi,
         plt.setp(ax.get_xticklabels(), visible=False)
         plt.setp(ax.get_yticklabels(), visible=False)
     plt.show()
+
+
+def plot_rewards(n_episodes,
+                 episode_rewards,
+                 save_path):
+    plt.figure()
+    plt.plot(np.arange(n_episodes), episode_rewards)
+    plt.savefig(save_path)
 
 
 def display_q_value(agent,
