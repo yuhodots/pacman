@@ -6,7 +6,8 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 from matplotlib import animation
 
 from envs import SmallGridEnv, BigGridEnv, UnistEnv
-from agents import MCAgent, SARSAAgent, QlearningAgent, DoubleQlearningAgent, LinearApprox, ActorCritic
+from agents import MCAgent, SARSAAgent, QlearningAgent, DoubleQlearningAgent, \
+    LinearApprox, REINFORCE, ActorCritic
 
 
 def str2bool(v):
@@ -48,6 +49,8 @@ def get_agent(args,
                                     gamma=args.gamma, seed=args.seed)
     elif agent_name == "LinearApprox":
         return LinearApprox(n_state, n_action, epsilon=args.epsilon, alpha=args.alpha, gamma=args.gamma, seed=args.seed)
+    elif agent_name == "REINFORCE":
+        return REINFORCE(n_state, n_action, lr=args.lr, gamma=args.gamma)
     elif agent_name == "ActorCritic":
         return ActorCritic(n_state, n_action, lr=args.lr, gamma=args.gamma)
     else:
@@ -121,24 +124,33 @@ def run_algorithm(args,
 
             agent.update_alpha((1 - (e_idx + 1) / args.n_episode) * 0.5)
             agent.update_epsilon((1 - (e_idx + 1) / args.n_episode) * 0.5)
+    elif agent_name == "REINFORCE":
+        for n_epi in episode:
+            state = env.reset()
+            state = agent.featurize_state(state)
+            done = False
+            while not done:
+                action, prob = agent.get_action(state)
+                prob = prob.squeeze()
+                next_state, reward, done, _ = env.step(action)
+                next_state = agent.featurize_state(next_state)
+                agent.save((reward, prob[action]))
+                state = next_state
+                episode_rewards[n_epi] += reward
+            agent.update()
     elif agent_name == "ActorCritic":
         for n_epi in episode:
             state = env.reset()
             state = agent.featurize_state(state)
-            action = agent.get_action(state)
             done = False
             while not done:
                 for t in range(args.update_step):
+                    action = agent.get_action(state)
                     next_state, reward, done, _ = env.step(action)
                     next_state = agent.featurize_state(next_state)
-                    next_action = agent.get_action(next_state)
                     agent.save((state, action, reward, next_state, done))
-                    episode_rewards[n_epi] += reward
-
                     state = next_state
-                    action = next_action
-                    if args.step_ghost:
-                        env.step_ghost()
+                    episode_rewards[n_epi] += reward
                     if done:
                         break
                 agent.update()
@@ -337,14 +349,22 @@ def make_animation(args,
     while not done:
         frame = visualize_matrix(eval_env.world, title=args.env + '_' + args.agent)
         frames.append(frame)
-        if "Approx" in args.agent:
-            action = agent.get_action(agent.featurize_state(state), test=True)
-        else:
+        if "Agent" in args.agent:
             action = agent.get_action(state)
+        else:
+            if args.agent == "LinearApprox":
+                action = agent.get_action(agent.featurize_state(state), test=True)
+            elif args.agent == "REINFORCE":
+                action, prob = agent.get_action(agent.featurize_state(state))
+            elif args.agent == "ActorCritic":
+                action = agent.get_action(agent.featurize_state(state))
         state, reward, done, _ = eval_env.step(action)
         ep_ret += reward
         ep_len += 1
         if args.step_ghost:
             eval_env.step_ghost()
+        if ep_len > 1000:
+            print("Too many frames (maybe infinite loop)")
+            break
     display_frames_as_gif(frames, save_path)
     print("animation creation is completed.")

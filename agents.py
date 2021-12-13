@@ -209,6 +209,60 @@ class LinearApprox(object):
         self.alpha = np.min([alpha, 0.01])
 
 
+class REINFORCE(nn.Module):
+    def __init__(self, n_state, n_action, lr=0.0002, gamma=0.999):
+        super(REINFORCE, self).__init__()
+        self.gamma = gamma
+        self.set_featurizer(n_state)
+        self.linear_1 = nn.Linear(40, 128)
+        self.linear_2 = nn.Linear(128, n_action)
+        self.optimizer = optim.Adam(self.parameters(), lr=lr)
+        self.data = []
+
+    def set_featurizer(self, n_state):
+        obs_space = spaces.Discrete(n_state)
+        observation_examples = np.expand_dims(np.array([obs_space.sample() for _ in range(10**4)]), -1)
+        self.scaler = sklearn.preprocessing.StandardScaler()
+        self.scaler.fit(observation_examples)
+        self.featurizer = sklearn.pipeline.FeatureUnion([
+            ("rbf1", RBFSampler(gamma=5.0, n_components=10)),
+            ("rbf2", RBFSampler(gamma=2.0, n_components=10)),
+            ("rbf3", RBFSampler(gamma=1.0, n_components=10)),
+            ("rbf4", RBFSampler(gamma=0.5, n_components=10))
+        ])
+        self.featurizer.fit(self.scaler.transform(observation_examples))
+
+    def featurize_state(self, state):
+        scaled = self.scaler.transform(np.expand_dims([state], -1))
+        featurized = self.featurizer.transform(scaled)
+        return featurized
+
+    def policy(self, state):
+        x = F.relu(self.linear_1(state))
+        prob = F.softmax(self.linear_2(x), dim=0)
+        return prob
+
+    def get_action(self, state):
+        prob = self.policy(torch.from_numpy(state).float())
+        dist = Categorical(prob)
+        action = dist.sample()
+        return action.item(), prob
+
+    def save(self, item):
+        self.data.append(item)
+
+    def update(self):
+        G = 0
+        self.optimizer.zero_grad()
+        for reward, prob in self.data[::-1]:
+            G = reward + self.gamma * G
+            loss = - torch.log(prob) * G
+            loss.backward()
+        self.optimizer.step()
+        self.data = []
+
+
+# Not implemented yet
 class ActorCritic(nn.Module):
     def __init__(self, n_state, n_action, lr=0.0002, gamma=0.999):
         super(ActorCritic, self).__init__()
@@ -244,7 +298,7 @@ class ActorCritic(nn.Module):
         x = F.relu(self.shared_layer(state))
         x = self.policy_layer(x)
         prob = F.softmax(x, dim=softmax_dim)
-        return Categorical(prob)
+        return Categorical(prob.squeeze())
 
     def get_action(self, state):
         dist = self.policy(torch.from_numpy(state).float())

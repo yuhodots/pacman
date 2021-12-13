@@ -14,7 +14,7 @@ def get_arguments():
     # Agent
     parser.add_argument('-agent', type=str, default='MCAgent',
                         choices=['MCAgent', 'SARSAAgent', 'QlearningAgent', 'DoubleQlearningAgent',
-                                 'LinearApprox', 'ActorCritic'])
+                                 'LinearApprox', 'REINFORCE', 'ActorCritic'])
     parser.add_argument('-epsilon', type=float, default=1.0)
     parser.add_argument('-alpha', type=float, default=0.1)
     parser.add_argument('-gamma', type=float, default=0.995)
