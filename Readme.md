@@ -1,10 +1,12 @@
 # Pac-man Bot
 
-This repository contains the implementation of a simple reinforcement learning task. So it's not exactly the same as the original Pac-man game. In this environment, the episode ends when the agent gets all the stars (unlike the original Pac-man game that the episode ends when all coins are removed).
-
 <img src = "./img/video-game.png" width="60%">
 
 *<Taken from: https://pixabay.com/images/id-1332694/>*
+
+This repository contains the implementation of a simple reinforcement learning task. So it's not exactly the same as the original Pac-man game. In this environment, the episode ends when the agent gets all the stars (unlike the original Pac-man game that the episode ends when all coins are removed).
+
+<img src="./img/UnistEnv_SARSAAgent.gif" alt="img" width="50%;" /><img src="./img/UnistEnv_QlearningAgent.gif" alt="img" width="50%;" />
 
 ## Algorithms
 
@@ -30,8 +32,6 @@ sh ${runfile name} 	# Ex) sh mc-small.sh
 The results of code execution can be found in the `results` directory or terminal window.
 
 ![img](./img/Qvalue.png)
-
-<img src="./img/UnistEnv_SARSAAgent.gif" alt="img" width="50%;" /><img src="./img/UnistEnv_SARSAAgent.gif" alt="img" width="50%;" />
 
 ### Requirements
 
