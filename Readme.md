@@ -31,7 +31,7 @@ The results of code execution can be found in the `results` directory or termina
 
 ![img](./img/Qvalue.png)
 
-<img src="./img/UnistEnv_SARSAAgent.gif" alt="img" style="zoom: 65%;" /><img src="./img/UnistEnv_QlearningAgent.gif" alt="img" style="zoom: 65%;" />
+<img src="./img/UnistEnv_SARSAAgent.gif" alt="img" style="zoom: 40%;" /><img src="./img/UnistEnv_QlearningAgent.gif" alt="img" style="zoom: 40%;" />
 
 ### Requirements
 
