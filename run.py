@@ -44,7 +44,8 @@ def main():
 
     env, agent, rewards = run_algorithm(args, env, agent)
     filename = args.env + '_' + args.agent + args.memo
-    plot_rewards(args.n_episode, rewards, save_path=args.save_dir_reward + filename + '_rewards.png')
+    plot_rewards(args.n_episode, rewards, title=args.agent + ' reward',
+                 save_path=args.save_dir_reward + filename + '_rewards.png')
     make_animation(args, env, agent, save_path=args.save_dir_animate + filename)
     # test_algorithm(args, env, agent) - Not implemented yet
 

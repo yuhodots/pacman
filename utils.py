@@ -248,8 +248,11 @@ def plot_pi_v(Pi,
 
 def plot_rewards(n_episodes,
                  episode_rewards,
-                 save_path):
+                 title='',
+                 title_fs=15,
+                 save_path=''):
     plt.figure()
+    plt.title(title, fontsize=title_fs)
     plt.plot(np.arange(n_episodes), episode_rewards)
     plt.savefig(save_path)
 

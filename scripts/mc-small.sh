@@ -5,5 +5,5 @@ python run.py \
     -agent 'MCAgent' \
     -epsilon 1.0 \
     -alpha 0.1 \
-    -gamma 0.99 \
-    -n_episode 10000
+    -gamma 0.995 \
+    -n_episode 3000
