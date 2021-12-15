@@ -34,9 +34,7 @@ The results of code execution can be found in the `results` directory or termina
 
 ### Requirements
 
-```python
-# TBA
-```
+You can check the virtual environments and required modules in `environment.yaml`  and `requirements.txt`.
 
 ## Environments
 
