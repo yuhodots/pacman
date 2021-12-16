@@ -270,7 +270,7 @@ class ActorCritic(nn.Module):
         self.gamma = gamma
         self.n_action = n_action
         self.set_featurizer(n_state)
-        self.shared_layer = nn.Linear(400, 256)
+        self.shared_layer = nn.Linear(200, 256)
         self.policy_layer = nn.Linear(256, n_action)
         self.value_layer = nn.Linear(256, 1)
         self.optimizer = optim.Adam(self.parameters(), lr=lr)
@@ -282,10 +282,10 @@ class ActorCritic(nn.Module):
         self.scaler = sklearn.preprocessing.StandardScaler()
         self.scaler.fit(observation_examples)
         self.featurizer = sklearn.pipeline.FeatureUnion([
-            ("rbf1", RBFSampler(gamma=5.0, n_components=100)),
-            ("rbf2", RBFSampler(gamma=2.0, n_components=100)),
-            ("rbf3", RBFSampler(gamma=1.0, n_components=100)),
-            ("rbf4", RBFSampler(gamma=0.5, n_components=100))
+            ("rbf1", RBFSampler(gamma=5.0, n_components=50)),
+            ("rbf2", RBFSampler(gamma=2.0, n_components=50)),
+            ("rbf3", RBFSampler(gamma=1.0, n_components=50)),
+            ("rbf4", RBFSampler(gamma=0.5, n_components=50))
         ])
         self.featurizer.fit(self.scaler.transform(observation_examples))
 
@@ -298,7 +298,7 @@ class ActorCritic(nn.Module):
         x = F.relu(self.shared_layer(state))
         x = self.policy_layer(x)
         prob = F.softmax(x, dim=softmax_dim)
-        return Categorical(prob.squeeze())
+        return Categorical(prob)
 
     def get_action(self, state):
         dist = self.policy(torch.from_numpy(state).float())
@@ -337,8 +337,7 @@ class ActorCritic(nn.Module):
         td_target = reward + self.gamma * self.value(next_state) * done
         td_error = td_target - self.value(state)
 
-        dist = self.policy(state, softmax_dim=1)
-        prob_action = dist.probs.gather(1, action)
+        prob_action = torch.eye(self.n_action)[action.squeeze()]
         loss_actor = - torch.log(prob_action) * td_error.detach()
         # loss_critic = F.smooth_l1_loss(self.value(state), td_target.detach())
         loss_critic = (self.value(state) - td_target.detach()) ** 2
