@@ -6,5 +6,5 @@ python run.py \
     -epsilon 0.1 \
     -alpha 0.01 \
     -gamma 0.99 \
-    -n_episode 5000 \
+    -n_episode 3000 \
     -step_ghost True
