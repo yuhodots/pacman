@@ -366,7 +366,7 @@ def make_animation(args,
         ep_len += 1
         if args.step_ghost:
             eval_env.step_ghost()
-        if ep_len > 1000:
+        if ep_len > 200:
             print("Too many frames (maybe infinite loop)")
             break
     display_frames_as_gif(frames, save_path)

@@ -10,7 +10,7 @@ This repository contains the implementation of a simple reinforcement learning t
 
 ## Algorithms
 
-The algorithms in this repository focus on table-based classical reinforcement learning algorithms that do not use the deep neural network.
+The algorithms in this repository focus on table-based classical reinforcement learning algorithms that do not use the deep neural network. Currently, the approximation version does not converge well, so it needs to be modified.
 
 1. Monte-Carlo Method
 2. SARSA
