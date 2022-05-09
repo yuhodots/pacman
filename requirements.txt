@@ -46,7 +46,7 @@ nbclient==0.5.9
 nbconvert==6.3.0
 nbformat==5.1.3
 nest-asyncio==1.5.4
-notebook==6.4.6
+notebook==6.4.10
 numpy @ file:///tmp/build/80754af9/numpy_and_numpy_base_1634095651905/work
 nvidia-pyindex==1.0.9
 olefile @ file:///Users/ktietz/demo/mc3/conda-bld/olefile_1629805411829/work
